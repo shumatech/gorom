@@ -1,0 +1,28 @@
+<html window-resizable="true">
+  <head>
+    <title>Hidden Test</title>
+    <style>
+        .hidden { visibility: none !important; }
+        #parent { border: solid 1px red; size: 100px; }
+        #contain { border: solid 1px green; 50px; }
+        #child { border: solid 1px blue; size: 50px; }
+    </style>
+    <script type="text/tiscript">
+      $(#hide-parent) << event click { $(#parent).@.addClass("hidden"); }
+      $(#show-parent) << event click { $(#parent).@.removeClass("hidden"); }
+      $(#hide-child) << event click { $(#child).@.addClass("hidden"); }
+      $(#show-child) << event click { $(#child).@.removeClass("hidden"); }
+    </script>
+  </head>
+<body>
+  <button#hide-parent>Hide Parent</button>
+  <button#show-parent>Show Parent</button>
+  <button#hide-child>Hide Child</button>
+  <button#show-child>Show Child</button>
+  <div#parent.hidden>Parent
+    <div#contain>Container
+      <div#child.hidden>Child</div>
+    </div>
+  </div>
+</body>
+</html>

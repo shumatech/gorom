@@ -1,0 +1,32 @@
+dirroms
+machine1 : OK
+  rom_1.bin : OK
+  rom_2.bin : OK
+machine2 : OK
+  rom_3.bin : OK
+  rom_4.bin : OK
+  rom_5.bin : OK
+machine3 : OK
+  rom_6.bin : OK
+  rom_7.bin : OK
+  rom_8.bin : OK
+  rom_9.bin : OK
+
+Machine Stats
+  All OK          : 3 (100.0%)
+  ROMs Corrupt    : 0 (0.0%)
+  ROMs Bad Name   : 0 (0.0%)
+  ROMs Missing    : 0 (0.0%)
+  ROMs Extra      : 0 (0.0%)
+  Machine Missing : 0 (0.0%)
+  Machine Corrupt : 0 (0.0%)
+  Total Machines  : 3
+  Extra Files     : 0
+
+ROM Stats
+  OK        : 9 (100.0%)
+  Corrupt   : 0 (0.0%)
+  Bad Name  : 0 (0.0%)
+  Missing   : 0 (0.0%)
+  Total     : 9
+  Extra     : 0

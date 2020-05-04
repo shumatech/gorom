@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE datafile PUBLIC "-//Logiqx//DTD ROM Management Datafile//EN" "http://www.logiqx.com/Dats/datafile.dtd">
+
+<datafile>
+	<header>
+		<name>MAME - Update ROMs (v0.220 to v0.221)</name>
+		<description>MAME - Update ROMs (v0.220 to v0.221)</description>
+		<version></version>
+		<author></author>
+	</header>
+	<machine name="cworld2j">
+		<description>Adventure Quiz Capcom World 2 (Japan 920611)</description>
+		<year>1992</year>
+		<manufacturer>Capcom</manufacturer>
+		<rom name="q522b.1a" size="279" crc="0a1527ab" sha1="116bab946ebe87fa0e913c210604910f9af0389f"/>
+	</machine>
+	<machine name="knightsja">
+		<description>Knights of the Round (Japan 911127, B-Board 89625B-1)</description>
+		<year>1991</year>
+		<manufacturer>Capcom</manufacturer>
+		<rom name="kr22b.1a" size="279" crc="f15b2c0f" sha1="07113a14a60b5ba232451bc73e36f7e6a7fee572"/>
+	</machine>
+	<machine name="kod">
+		<description>The King of Dragons (World 910805)</description>
+		<year>1991</year>
+		<manufacturer>Capcom</manufacturer>
+		<rom name="kd29b.1a" size="279" crc="6b892f82" sha1="c0b5c285c45bcc8d885681efa8e0c0e564142684"/>
+	</machine>
+	<machine name="kodja">
+		<description>The King of Dragons (Japan 910805, B-Board 89625B-1)</description>
+		<year>1991</year>
+		<manufacturer>Capcom</manufacturer>
+		<rom name="kd22b.1a" size="279" crc="bd1a6035" sha1="16f36373eee5823733b0bbf01aafc4a07e3d1667"/>
+	</machine>
+	<machine name="sf2ef">
+		<description>Street Fighter II: The World Warrior (World 910411)</description>
+		<year>1991</year>
+		<manufacturer>Capcom</manufacturer>
+		<rom name="sf2e_37f.11f" size="131072" crc="b58a741b" sha1="0ff6edbd828ab0e5b3766684c9d93a4e0fb88f6d"/>
+	</machine>
+	<machine name="wof">
+		<description>Warriors of Fate (World 921031)</description>
+		<year>1992</year>
+		<manufacturer>Capcom</manufacturer>
+		<rom name="d9k1.9k" size="279" crc="6c35c805" sha1="641b9003b8e7fc969d0cd679f98e413ed2abe474"/>
+	</machine>
+</datafile>

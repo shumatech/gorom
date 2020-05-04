@@ -1,0 +1,95 @@
+
+namespace Settings
+{
+  const path = System.path(#USER_APPDATA, APP_NAME.toLowerCase() + ".json");
+  var   list = []; // list of persistable objects
+
+  function store() 
+  {
+    var stream = Stream.openFile(path,"uw");
+  
+    if( !stream )
+    {
+      view.msgbox(#warning, "Cannot open file "+ path +" for writing. Settings will not be saved." );
+      return;
+    }
+  
+    var data = {};
+    for(var persistable in list) 
+      persistable.store(data);
+
+    stream.printf("%V\n",data);
+    //stdout.printf("%V\n",data);
+    stream.close();
+  }
+
+  function restore() 
+  {
+    var stream = Stream.openFile(path,"ur");
+    if( !stream )
+      return false;
+    var data = null;
+    try      { data = parseData( stream ); }
+    catch(e) { stdout.printf("Restore error %s\n",e); }
+    finally { stream.close(); }
+    if(data) for(var persistable in list)
+                persistable.restore(data);
+  }
+
+  //just reads the config data
+  function fetch() {
+    var data = {};
+    var stream = Stream.openFile(path,"ur");
+    if( !stream )
+      return data;
+    try      { data = parseData( stream ); }
+    catch(e) { stdout.printf("Restore error %s\n",e); }
+    finally { stream.close(); }
+    return data;
+  }
+
+  function add(persistable) { list.push(persistable); }
+}
+
+// window position persistence
+Settings.add {
+  store: function(data) 
+    {
+      if( view.windowState == View.WINDOW_SHOWN) {
+        var (x,y,w,h) = view.box(#rectw,#border,#screen);
+        data.window = {left:x,top:y,width:w,height:h};
+      }
+    },
+  restore: function(data) 
+    {
+       if( data.window )
+         view.move(
+           Integer.max(data.window.left,0),
+           Integer.max(data.window.top,0),
+           Integer.max(data.window.width,800),
+           Integer.max(data.window.height,600)); 
+    }
+};
+
+// persistent stuff
+
+View.settings = function() 
+{
+  var map = {}; 
+
+  Settings.add {
+    store: function(data)   { data.settings = map; },
+    restore: function(data) { if(data.settings) Object.assign(map, data.settings); }
+  };
+
+  function add(name,val) {
+    map[name] = val;
+  }
+
+  function get(name,defval) {
+    return map[name] || defval;
+  }
+
+  return {add:add, get:get};
+
+}();

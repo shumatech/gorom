@@ -1,0 +1,62 @@
+{
+  "header": {
+    "name": "ziproms"
+  },
+  "machines": {
+    "machine1": {
+      "status": "missing",
+      "path": "",
+      "info": "",
+      "roms": {}
+    },
+    "machine2": {
+      "status": "errors",
+      "path": "machine2.zip",
+      "info": "",
+      "roms": {
+        "rom_3.bin": {
+          "status": "badname",
+          "info": "badname.bin"
+        },
+        "rom_4.bin": {
+          "status": "missing",
+          "info": ""
+        },
+        "rom_5.bin": {
+          "status": "ok",
+          "info": ""
+        },
+        "rom_6.bin": {
+          "status": "extra",
+          "info": ""
+        }
+      }
+    },
+    "machine3": {
+      "status": "errors",
+      "path": "machine3.zip",
+      "info": "",
+      "roms": {
+        "rom_6.bin": {
+          "status": "missing",
+          "info": ""
+        },
+        "rom_7.bin": {
+          "status": "ok",
+          "info": ""
+        },
+        "rom_8.bin": {
+          "status": "corrupt",
+          "info": ""
+        },
+        "rom_9.bin": {
+          "status": "ok",
+          "info": ""
+        }
+      }
+    }
+  },
+  "extras": [
+    "badname.zip"
+  ]
+}

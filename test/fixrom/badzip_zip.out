@@ -1,0 +1,38 @@
+Scanning directory .
+Scanning directory ../zip
+ziproms
+machine1.zip : FIXING
+  rom_1.bin : COPY from badname.zip
+  rom_2.bin : COPY from badname.zip
+  OK
+machine2.zip : FIXING
+  rom_3.bin : RENAME from badname.bin
+  rom_5.bin : OK
+  rom_4.bin : COPY from ../zip/machine2.zip
+  OK
+machine3.zip : FIXING
+  rom_7.bin : OK
+  rom_9.bin : OK
+  rom_6.bin : COPY from machine2.zip
+  rom_8.bin : COPY from ../zip/machine3.zip
+  OK
+Waiting for copy jobs to complete
+Renaming temporary files
+
+Machine Stats
+  OK     : 0 (0.0%)
+  Fixed  : 3 (100.0%)
+  Failed : 0 (0.0%)
+  Total  : 3
+Scanning directory .
+Scanning directory ../zip
+ziproms
+machine1.zip : OK
+machine2.zip : OK
+machine3.zip : OK
+
+Machine Stats
+  OK     : 3 (100.0%)
+  Fixed  : 0 (0.0%)
+  Failed : 0 (0.0%)
+  Total  : 3

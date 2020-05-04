@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE datafile PUBLIC "-//Logiqx//DTD ROM Management Datafile//EN" "http://www.logiqx.com/Dats/datafile.dtd">
+
+<datafile>
+	<header>
+		<name>dirroms</name>
+		<description>Dir_ROMs</description>
+		<version></version>
+		<author></author>
+	</header>
+	<machine name="machine1">
+		<description>machine1</description>
+		<rom name="machine1\rom_1.bin" size="4096" crc="c26a1549" sha1="325701a893c1102805329f8af2d8410e40c14c79"/>
+		<rom name="machine1\rom_2.bin" size="4096" crc="b7426747" sha1="1d19fbe4b8e3b27a6244cff1375ca62629610923"/>
+	</machine>
+	<machine name="machine2">
+		<description>machine2</description>
+		<rom name="machine2\rom_3.bin" size="4096" crc="04167f96" sha1="2936ac223eec87c3df372560cd62f76b209d488a"/>
+		<rom name="machine2\rom_4.bin" size="4096" crc="c506e1b8" sha1="d7ed430be515f9b9400248a7cf6ef53006fd29b0"/>
+		<rom name="machine2\rom_5.bin" size="4096" crc="4b3d43d8" sha1="ca383f60af75d30d9e33f9b9dd551b8c50f2c454"/>
+	</machine>
+	<machine name="machine3">
+		<description>machine3</description>
+		<rom name="machine3\rom_6.bin" size="4096" crc="321f42ee" sha1="4544856e00b9efb13c1d5e6ee52ee29c80316d90"/>
+		<rom name="machine3\rom_7.bin" size="4096" crc="661dbe11" sha1="4045f6b8da2684e64037dfc3a4589d519638d154"/>
+		<rom name="machine3\rom_8.bin" size="4096" crc="a063b5c3" sha1="eca357e2c830407b89741f098f507f5d41513f43"/>
+		<rom name="machine3\rom_9.bin" size="4096" crc="ad119cd7" sha1="9ca412192ff0714760cb9c1f21e73f1f4a693d28"/>
+	</machine>
+</datafile>

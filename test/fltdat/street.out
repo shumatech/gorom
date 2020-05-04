@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE datafile PUBLIC "-//Logiqx//DTD ROM Management Datafile//EN" "http://www.logiqx.com/Dats/datafile.dtd">
+
+<datafile>
+	<header>
+		<name>MAME - Update ROMs (v0.220 to v0.221)</name>
+		<description>MAME - Update ROMs (v0.220 to v0.221)</description>
+		<version></version>
+		<author></author>
+	</header>
+	<machine name="sf2cems6a">
+		<description>Street Fighter II&#39;: Champion Edition (Mstreet-6, bootleg, set 1)</description>
+		<year>1992</year>
+		<manufacturer>bootleg</manufacturer>
+		<rom name="ms6_gal16v8.u173" size="279" crc="32dec205" sha1="aaf1579b00f30b5bec86e89db8c7f0c3ad7a790d"/>
+		<rom name="ms6_gal16v8.u176" size="279" crc="deb37f27" sha1="776d5185eece102d6e340ab5c2f7ddc4483ccda5"/>
+		<rom name="ms6_gal16v8.u198" size="279" crc="cd1246fe" sha1="b6d311f3c8dd6b411059eb60b22b33483b59bff8"/>
+	</machine>
+	<machine name="sf2ef">
+		<description>Street Fighter II: The World Warrior (World 910411)</description>
+		<year>1991</year>
+		<manufacturer>Capcom</manufacturer>
+		<rom name="sf2e_37f.11f" size="131072" crc="b58a741b" sha1="0ff6edbd828ab0e5b3766684c9d93a4e0fb88f6d"/>
+	</machine>
+</datafile>

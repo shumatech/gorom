@@ -1,0 +1,37 @@
+<html window-frame=solid>
+<head>
+  <style>
+    @import url(about.css);
+  </style>
+  <script type="text/tiscript">
+    include "timeline.tis";
+
+    function self.ready() {
+      Timeline.on(self)
+        .from($(#title), { duration: 1s, ease: Ease.bounceOut },
+                         { transform: translate(500dip, 0dip) } )
+        .play();
+    }
+
+    $(#version).html = view.parameters.version
+    $(#build).html = view.parameters.build
+
+    event click $(body) { view.close(); }
+
+    event click $(a) {
+      var href = this.attributes["href"];
+      Sciter.launch(href);
+      return true;
+    }
+  </script>
+</head>
+<body>
+  <img#title src="images/title.svg">
+  <div#about>
+    <p>GoROM version <span#version/></p>
+    <p>Copyright (c) 2020 ShumaTech</p>
+    <p>Built on <span#build/></p>
+  </div>
+  <p#credit>GoROM uses <a href="http://sciter.com">Sciter Engine</a>, Copyright Terra Informatica Software, Inc.</p>
+</body>
+</html>

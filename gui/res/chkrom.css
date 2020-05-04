@@ -1,0 +1,51 @@
+#chkrom-view {
+  size: *;
+  padding: 1em;
+}
+
+#chkrom-top {
+  flow: horizontal;
+}
+
+#chkrom-bottom {
+  flow: stack;
+  margin-top: 1em;
+  height: *;
+}
+
+#chkrom-inputs {
+  flow: vertical;
+  width: *;
+}
+
+#chkrom-romsdir {
+  margin-top: 1em;
+}
+
+#chkrom-machine-view {
+  size: *;
+}
+
+#chkrom-results {
+  flow: horizontal;
+  margin-bottom: 0.5em;
+}
+
+#chkrom-roms-view {
+  size: *;
+}
+
+#chkrom-roms-view .header span {
+  margin-left: 0.25em;
+}
+
+#chkrom-roms-view .header button {
+  background-image:url(stock:chevron-left);
+  background-size: 60%;
+  height: *;
+  width: 2em;
+}
+
+#chkrom-roms-view .header button:hover {
+  background-color: #343c58;
+}

@@ -1,0 +1,471 @@
+@import "theme.css";
+@import "grid.css";
+
+body {
+  display: block;
+  margin: 0;
+  flow: vertical;
+  color: color(text-normal);
+  size: *;
+  background: color(background);
+  font-family: sans-serif;
+  font-size: 10pt;
+}
+
+/*****************************************************************************
+ common
+*****************************************************************************/
+
+input {
+  font-family: sans-serif;
+  font-size: 10pt;
+}
+
+textarea {
+  font-family: sans-serif;
+  font-size: 10pt;
+}
+
+input[placeholder]:empty::marker {
+  content:attr(placeholder);
+  width:*;
+  color: color(text-dark);
+  padding: inherit;
+}
+
+input:disabled {
+  color: color(text-dark) !important;
+}
+
+button {
+  display: block;
+  border: none;
+  border-radius: none;
+  background: none;
+  background-size: contain;
+  background-position: center;
+  fill: color(button-fill);
+  padding: 0;
+  vertical-align: middle;
+  stroke-width: 0;
+}
+
+button:disabled {
+  pointer-events: none;
+}
+
+.header {
+  margin-bottom: 0.25em;
+  flow: horizontal;
+}
+
+.header span {
+  color: color(text-light);
+  font-size: 20dip;
+  text-weight: bold;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow-x: hidden;
+}
+
+.hidden {
+  visibility: none !important;
+}
+
+/*****************************************************************************
+ controls view
+*****************************************************************************/
+
+#controls {
+  flow: horizontal;
+  margin: 1em;
+}
+
+#inputs {
+  flow: vertical;
+  width: *;
+  margin-left: 1em;
+}
+
+#logo-progress {
+  flow: stack;
+  height: *;
+  width: 5em;
+}
+
+#logo {
+  size: *;
+  width: 5em;
+}
+
+#logo:hover {
+  background-color: color(button-select);
+}
+
+circle-progress {
+  aspect: CircleProgress(band:5dip, sector:color(select), circle:color(button-fill));
+  size: *;
+  display:block;
+  font-size:16dip;
+  vertical-align:middle;
+  text-align:center;
+}
+
+/*****************************************************************************
+ file & dir input
+*****************************************************************************/
+
+path-input {
+  prototype: PathInput;
+  flow:horizontal;
+  width:*;
+  vertical-align: baseline;
+}
+
+path-input label {
+  white-space: nowrap;
+  vertical-align: baseline;
+  margin-right: 0.5em;
+  width: 6em;
+}
+
+path-input input {
+  border-radius: 0;
+  background-color: color(light);
+  background-image: none;
+  border: solid 1px color(border);
+  vertical-align: baseline;
+  color: color(text-normal);
+  width: *;
+}
+
+path-input input:disabled {
+  background-color: color(dark);
+}
+
+path-input button {
+  background-color: color(light);
+  border: solid 1px color(border);
+  vertical-align: baseline;
+  width: 4em;
+  height: *;
+  fill: color(text-normal);
+  stroke-width: 0;
+  background-position: center;
+}
+
+path-input button:hover {
+  background-color: color(accent);
+  fill: color(text-light);
+}
+
+path-input button:disabled {
+  background-color: color(dark);
+  fill: color(text-dark);
+}
+
+#datfile button {
+  background-size: 25%;
+  background-image: url(path:M6 2c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6H6zm7 7V3.5L18.5 9H13z)
+}
+
+#romsdir {
+  margin-top: 1em;
+}
+
+#romsdir button {
+  background-size: 30%;
+  background-image: url(path:M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z)
+}
+
+/*****************************************************************************
+ action buttons
+*****************************************************************************/
+
+button.action {
+  height: *;
+  width: 64dip;
+  margin-left: 1em;
+  border: solid 1px color(border);
+  background-color: color(light);
+  background-size: 50%;
+  background-position: 50% 30%;
+  fill: color(text-normal);
+  color: color(text-normal);
+}
+
+button.action:hover {
+  background-color: color(accent);
+  fill: color(select);
+}
+
+button.action:disabled {
+  fill: color(button-fill) !important;
+  color: color(text-dark) !important;
+  background-color: color(dark) !important;
+}
+
+#fixrom {
+  background-image: url(path:M507.73 109.1c-2.24-9.03-13.54-12.09-20.12-5.51l-74.36 74.36-67.88-11.31-11.31-67.88 74.36-74.36c6.62-6.62 3.43-17.9-5.66-20.16-47.38-11.74-99.55.91-136.58 37.93-39.64 39.64-50.55 97.1-34.05 147.2L18.74 402.76c-24.99 24.99-24.99 65.51 0 90.5 24.99 24.99 65.51 24.99 90.5 0l213.21-213.21c50.12 16.71 107.47 5.68 147.37-34.22 37.07-37.07 49.7-89.32 37.91-136.73zM64 472c-13.25 0-24-10.75-24-24 0-13.26 10.75-24 24-24s24 10.74 24 24c0 13.25-10.75 24-24 24z);
+}
+
+#chkrom {
+  background-image: url(path:M173.898 439.404l-166.4-166.4c-9.997-9.997-9.997-26.206 0-36.204l36.203-36.204c9.997-9.998 26.207-9.998 36.204 0L192 312.69 432.095 72.596c9.997-9.997 26.207-9.997 36.204 0l36.203 36.204c9.997 9.997 9.997 26.206 0 36.204l-294.4 294.401c-9.998 9.997-26.207 9.997-36.204-.001z);
+}
+
+#stop {
+  background-image: url(path:M504 256C504 119 393 8 256 8S8 119 8 256s111 248 248 248 248-111 248-248zm-448 0c0-110.5 89.5-200 200-200s200 89.5 200 200-89.5 200-200 200S56 366.5 56 256zm296-80v160c0 8.8-7.2 16-16 16H176c-8.8 0-16-7.2-16-16V176c0-8.8 7.2-16 16-16h160c8.8 0 16 7.2 16 16z);
+}
+
+/*****************************************************************************
+ directory list
+*****************************************************************************/
+
+#srcdirs {
+  margin: 1em;
+}
+
+path-list {
+  display: block;
+  prototype: PathList;
+  flow: vertical;
+}
+
+path-list div {
+  flow: horizontal;
+  width: *;
+}
+
+path-list span {
+  font-size: 16dip;
+  width: *;
+}
+
+path-list button {
+  background-size: 50%;
+  hieght: *;
+  width: 2em;
+}
+
+#path-list-add {
+  background-image: url(path:M40,0 H60 V40 H100 V60 H60 V100 H40 V60 H0 V40 h40 z);
+}
+
+#path-list-del {
+  background-image: url(path:M0,40 H100 V60 H0 Z);
+}
+
+#path-list-up {
+  background-image: url(stock:arrow-up);
+}
+
+#path-list-down {
+  background-image: url(stock:arrow-down);
+}
+
+path-list button:hover {
+  background-color: color(button-select);
+}
+
+path-list ul {
+  margin: 0;
+  min-height: 1.5em;
+  max-height: 10em;
+  border: solid 1px color(border);
+  list-style-type: none;
+  background-color: color(light);
+  padding: 0;
+  overflow-y: auto;
+}
+
+path-list li {
+  padding: 0.2em;
+}
+
+path-list li.select {
+  background-color: color(accent);
+}
+
+/*****************************************************************************
+ status classes
+*****************************************************************************/
+span.OK {
+  color: green;
+}
+
+span.MISSING {
+  color: yellow;
+}
+
+span.CORRUPT {
+  color: red;
+}
+
+span.BAD_NAME {
+  color: magenta;
+}
+
+span.ERRORS {
+  color: red;
+}
+
+span.FAILED {
+  color: red;
+}
+
+span.FIXED {
+  color: cyan;
+}
+
+span.COPIED {
+  color: cyan;
+}
+
+span.NOT_FOUND {
+  color: red;
+}
+
+span.RENAMED {
+  color: cyan;
+}
+
+/*****************************************************************************
+ stats
+*****************************************************************************/
+
+.stats {
+  white-space: nowrap;
+  width: *;
+  border: solid 1px color(border);
+  padding: 0.25em;
+}
+
+.stats dl {
+  flow: row(dt,dd);
+  margin: 0 auto;
+}
+
+.stats header {
+  font-weight: bold;
+}
+
+.stats dt {
+}
+
+.stats dd {
+  padding-left: 1em;
+}
+
+/*****************************************************************************
+ grid view
+*****************************************************************************/
+
+#grid {
+  flow: stack;
+  margin: 1em;
+  height: *;
+}
+
+#results {
+  flow: horizontal;
+  margin-bottom: 0.5em;
+  background-color: color(light)
+}
+
+#machine-view {
+  size: *;
+}
+
+#roms-view {
+  size: *;
+}
+
+#roms-view .header span {
+  margin-left: 0.25em;
+}
+
+#roms-view .header button {
+  background-image:url(stock:chevron-left);
+  background-size: 60%;
+  height: *;
+  width: 2em;
+}
+
+#roms-view .header button:hover {
+  background-color: color(button-select);
+}
+
+/*****************************************************************************
+ log
+*****************************************************************************/
+
+#log {
+  flow: horizontal;
+  height: 1.4em;
+  border-top: solid color(border) 1px;
+}
+
+#log-area {
+  background-color: color(dark);
+  flow: stack;
+  size: *;
+  padding-left: 0.5em;
+}
+
+#log.expand {
+  height: *;
+}
+
+#log-line {
+  background-color: color(dark);
+  color: color(text-normal);
+  size: *;
+  visibility: visible;
+}
+
+#log.expand #log-line {
+  visibility: none;
+}
+
+/*
+#log-text {
+  background-color: color(dark);
+  color: color(text-normal);
+  border: none;
+  display: block;
+  height: *;
+  overflow-y: auto;
+  cursor: pointer;
+  font-family: sans-serif;
+  visibility: none;
+}
+*/
+
+#log-text {
+  size: *;
+  visibility: none;
+  background-image: none;
+  background-color: color(dark);
+  color: color(text-normal);
+  overflow-y: auto;
+  border: none;
+}
+
+#log.expand #log-text {
+  visibility: visible;
+}
+
+#log-button {
+  background-image: url(stock:chevron-up);
+  margin-bottom: *;
+  size: 1.4em;
+  background-size: 60%;
+}
+
+#log.expand #log-button {
+  background-image: url(stock:chevron-down);
+}
+
+#log-button:hover {
+  background-color: color(button-select);
+}

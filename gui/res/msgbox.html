@@ -1,0 +1,18 @@
+<html>
+<head>
+  <title>GoROM Error</title>
+  <style>
+    @import url(msgbox.css);
+  </style>
+  <script type="text/tiscript">
+    event click $(#ok) { view.close(); }
+    $(#content).html = view.parameters.content;
+    </script>
+</head>
+<body>
+    <div id="content" type="error"></div>
+    <div id="button-bar">
+        <button class="dfn" id="ok" role="default-button">OK</button>
+    </div>
+</body>
+</html>

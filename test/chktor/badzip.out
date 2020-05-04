@@ -1,0 +1,21 @@
+Torrent Name : zip
+Announce     : 
+Piece Length : 32768 (32 KiB)
+Pieces       : 2
+Files        : 3
+Total Length : 37887 (36.999 KiB)
+
+Verifying files...
+machine1.zip : MISSING
+machine2.zip : BAD SIZE (12633 != 12629)
+machine3.zip : BAD SIZE (12629 != 16824)
+
+Finding extra files...
+badname.zip : EXTRA
+
+Torrent Stats
+  Missing  : 1
+  Bad Size : 2
+  Extras   : 1
+
+Skipping piece validation due to file errors

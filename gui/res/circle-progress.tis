@@ -1,0 +1,38 @@
+function CircleProgress(params = {}) 
+{
+  const strokeWidth = params.band || 10dip; 
+  const strokeColor = params.sector || color(100,0,0); 
+  const circleColor = params.circle || color(230,230,230); 
+
+  var start = 0.75; 
+  var value = 0;  
+
+  function render(gfx) 
+  {
+    const sw = this.toPixels(strokeWidth, #width); 
+
+    var (w,h) = this.box(#dimension); 
+    var (x,y) = (w/2, h/2);  
+    var r = Integer.min(w,h) / 2 - sw / 2;  
+    
+    gfx.strokeWidth(sw + 0.5)
+       .strokeColor(circleColor)
+       .arc(x,y,r,r, 0deg, 360deg)
+       .strokeColor(strokeColor)
+       .arc(x,y,r,r, 360deg * start, 360deg * value);
+  }  
+  
+  this.paintBackground = render;
+  
+  // redefining property 'value' on that element
+  this["value"] = property(v) {
+    get return value;
+    set {
+      value = v;
+      this.text = String.$({(value * 100).toInteger() }%) ;
+      this.refresh();
+    }
+  };
+  //this.value = this.attributes["value"].toFloat(0.0);
+}
+

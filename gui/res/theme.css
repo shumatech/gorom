@@ -1,0 +1,17 @@
+html {
+  var(border): #000;
+
+  var(background): #272e49;
+  var(dark): #232942;
+  var(light): #2f3655;
+  var(accent): #4c547a;
+
+  var(text-light): #fff;
+  var(text-normal): #ccc;
+  var(text-dark): #777;
+
+  var(button-fill): #777;
+  var(button-select): #343c58;
+  
+  var(select): #73cbda;
+}

@@ -1,0 +1,38 @@
+Scanning directory .
+Scanning directory ../dir
+dirroms
+machine1 : FIXING
+  rom_1.bin : COPY from badname
+  rom_2.bin : COPY from badname
+  OK
+machine2 : FIXING
+  rom_3.bin : RENAME from badname.bin
+  rom_5.bin : OK
+  rom_4.bin : COPY from ../dir/machine2
+  OK
+machine3 : FIXING
+  rom_7.bin : OK
+  rom_9.bin : OK
+  rom_6.bin : COPY from machine2
+  rom_8.bin : COPY from ../dir/machine3
+  OK
+Waiting for copy jobs to complete
+Renaming temporary files
+
+Machine Stats
+  OK     : 0 (0.0%)
+  Fixed  : 3 (100.0%)
+  Failed : 0 (0.0%)
+  Total  : 3
+Scanning directory .
+Scanning directory ../dir
+dirroms
+machine1 : OK
+machine2 : OK
+machine3 : OK
+
+Machine Stats
+  OK     : 3 (100.0%)
+  Fixed  : 0 (0.0%)
+  Failed : 0 (0.0%)
+  Total  : 3

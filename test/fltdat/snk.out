@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE datafile PUBLIC "-//Logiqx//DTD ROM Management Datafile//EN" "http://www.logiqx.com/Dats/datafile.dtd">
+
+<datafile>
+	<header>
+		<name>MAME - Update ROMs (v0.220 to v0.221)</name>
+		<description>MAME - Update ROMs (v0.220 to v0.221)</description>
+		<version></version>
+		<author></author>
+	</header>
+	<machine name="tnk3b">
+		<description>T.A.N.K (bootleg, 8-way joystick)</description>
+		<year>1985</year>
+		<manufacturer>SNK</manufacturer>
+		<rom name="p1a.4e" size="16384" crc="26c45b82" sha1="5ba944e9508a935f77e1555c6920b0bc638b6423"/>
+	</machine>
+	<machine name="vanguardg">
+		<description>Vanguard (Germany)</description>
+		<year>1981</year>
+		<manufacturer>SNK</manufacturer>
+		<rom name="vg4g.bin" size="4096" crc="4a82306a" sha1="086d6c96d79681b482378c04b7340d3285d11ed8"/>
+		<rom name="vg8s.bin" size="4096" crc="abe5fa3f" sha1="cadb7c873ef025792c9ec38a6399ed19ade3b755"/>
+	</machine>
+	<machine name="victroad">
+		<description>Victory Road</description>
+		<year>1986</year>
+		<manufacturer>SNK</manufacturer>
+		<rom name="1.1d" size="4096" crc="5ab67bfc" sha1="62a62a7e4573d1233b50ddd163c4e3d9bdefaddd"/>
+	</machine>
+</datafile>

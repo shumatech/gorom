@@ -1,0 +1,23 @@
+1 VERSIONINFO
+FILEVERSION     1,0,0,%REVISION%
+PRODUCTVERSION  1,0,0,%REVISION%
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904E4"
+    BEGIN
+      VALUE "CompanyName", "ShumaTech"
+      VALUE "FileDescription", "GoROM Emulator ROM Manager"
+      VALUE "FileVersion", "%VERSION%"
+      VALUE "InternalName", "goromui"
+      VALUE "LegalCopyright", "2020 ShumaTech"
+      VALUE "OriginalFilename", "goromui.exe"
+      VALUE "ProductName", "GoROM"
+      VALUE "ProductVersion", "%VERSION%"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1252
+  END
+END

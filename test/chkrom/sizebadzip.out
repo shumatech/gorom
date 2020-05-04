@@ -1,0 +1,33 @@
+ziproms
+machine1 : MISSING
+machine2.zip : ROM ERRORS
+  rom_3.bin : MISSING
+  rom_4.bin : MISSING
+  rom_5.bin : OK
+  badname.bin : EXTRA
+  rom_6.bin : EXTRA
+machine3.zip : ROM ERRORS
+  rom_6.bin : MISSING
+  rom_7.bin : OK
+  rom_8.bin : OK
+  rom_9.bin : OK
+badname.zip : EXTRA
+
+Machine Stats
+  All OK          : 0 (0.0%)
+  ROMs Corrupt    : 0 (0.0%)
+  ROMs Bad Name   : 0 (0.0%)
+  ROMs Missing    : 2 (66.7%)
+  ROMs Extra      : 1 (33.3%)
+  Machine Missing : 1 (33.3%)
+  Machine Corrupt : 0 (0.0%)
+  Total Machines  : 3
+  Extra Files     : 1
+
+ROM Stats
+  OK        : 4 (44.4%)
+  Corrupt   : 0 (0.0%)
+  Bad Name  : 0 (0.0%)
+  Missing   : 5 (55.6%)
+  Total     : 9
+  Extra     : 2

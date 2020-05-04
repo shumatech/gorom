@@ -1,0 +1,32 @@
+dirroms
+machine1 : MISSING
+machine2 : ROM ERRORS
+  rom_3.bin : BAD NAME (badname.bin)
+  rom_4.bin : MISSING
+  rom_5.bin : OK
+  rom_6.bin : EXTRA
+machine3 : ROM ERRORS
+  rom_6.bin : MISSING
+  rom_7.bin : OK
+  rom_8.bin : CORRUPT
+  rom_9.bin : OK
+badname : EXTRA
+
+Machine Stats
+  All OK          : 0 (0.0%)
+  ROMs Corrupt    : 1 (33.3%)
+  ROMs Bad Name   : 1 (33.3%)
+  ROMs Missing    : 2 (66.7%)
+  ROMs Extra      : 1 (33.3%)
+  Machine Missing : 1 (33.3%)
+  Machine Corrupt : 0 (0.0%)
+  Total Machines  : 3
+  Extra Files     : 1
+
+ROM Stats
+  OK        : 3 (33.3%)
+  Corrupt   : 1 (11.1%)
+  Bad Name  : 1 (11.1%)
+  Missing   : 4 (44.4%)
+  Total     : 9
+  Extra     : 1

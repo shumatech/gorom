@@ -1,0 +1,54 @@
+class PathInput : Behavior {
+  function clear() {
+    this.path.value = "";
+  }
+
+  function changed() {
+    this.postEvent(Event.EDIT_VALUE_CHANGED);
+  }
+
+  property value(v) {
+    get { return this.path.value; }
+    set { if (v == this.path.value) return; this.path.value = v; this.changed(); }
+  }
+
+  property disabled(v) {
+    get { return this.input.state.disabled; }
+    set {
+      this.button.state.disabled = v;
+      this.input.state.disabled = v;
+    }
+  }
+
+  function attached() {
+    var filter = this.@["filter"];
+    var type = this.@["type"];
+    var name = this.@["name"];
+
+    var select;
+    if (type == "file")
+      select = () => { return view.selectFile(#open, this.@["filter"]); }
+    else if (type == "dir")
+      select = () => { return view.selectFolder(#open); }
+    else
+      throw "bad type";
+
+    this.$append(<label>{name}:</label>);
+    this.input = this.$append(<input|text.path placeholder="Select {name}...">);
+    this.button = this.$append(<button title="Open {name}"/>);
+
+    var self = this
+    this.path = this.$(.path);
+
+    this.button << event click() {
+      var fn = select(filter);
+      if (fn)
+        self.value = URL.toPath(fn);
+    }
+
+    this << event keydown(evt) {
+      if (evt.keyCode == Event.VK_ENTER)
+        this.changed();
+    }
+  }
+}

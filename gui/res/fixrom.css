@@ -1,0 +1,55 @@
+#fixrom-view {
+  size: *;
+  padding: 1em;
+}
+
+#fixrom-top {
+  flow: horizontal;
+}
+
+#fixrom-bottom {
+  flow: stack;
+  margin-top: 1em;
+  height: *;
+}
+
+#fixrom-inputs {
+  flow: vertical;
+  width: *;
+}
+
+#fixrom-romsdir {
+  margin-top: 1em;
+}
+
+#fixrom-srcdirs {
+  margin-top: 1em;
+}
+
+#fixrom-machine-view {
+  size: *;
+}
+
+#fixrom-results {
+  flow: horizontal;
+  margin-bottom: 0.5em;
+}
+
+#fixrom-roms-view {
+  size: *;
+}
+
+#fixrom-roms-view .header span {
+  margin-left: 0.25em;
+}
+
+#fixrom-roms-view .header button {
+  background-image:url(stock:chevron-left);
+  background-size: 60%;
+  height: *;
+  width: 2em;
+}
+
+#fixrom-roms-view .header button:hover {
+  background-color: #343c58;
+}

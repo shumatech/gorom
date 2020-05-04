@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<!DOCTYPE datafile PUBLIC "-//Logiqx//DTD ROM Management Datafile//EN" "http://www.logiqx.com/Dats/datafile.dtd">
+<datafile>
+	<header>
+		<name>Atari - 2600</name>
+		<description>Atari - 2600</description>
+		<version>20200215-222027</version>
+		<author>C. V. Reynolds, FakeShemp, Hiccup, omonim2007, RetroUprising, xuom2</author>
+		<homepage>No-Intro</homepage>
+		<url>http://www.no-intro.org</url>
+	</header>
+	<game name="Abre-te, Sesamo! (Brazil) (Unl)">
+		<description>Abre-te, Sesamo! (Brazil) (Unl)</description>
+		<rom name="Abre-te, Sesamo! (Brazil) (Unl).a26" size="4096" crc="8CF511A4" md5="52385334AC9E9B713E13FFA4CC5CB940" sha1="CC00C5138FD1A3B723C5F1ACC90FF8E6E87942C1" status="verified"/>
+	</game>
+	<game name="Alien (Brazil) (Unl)">
+		<description>Alien (Brazil) (Unl)</description>
+		<rom name="Alien (Brazil) (Unl).a26" size="4096" crc="E61021EC" md5="956496F81775DE0B69A116A0D1AD41CC" sha1="ABF186C0108791D998F7738324D0E49A977B015B" status="verified"/>
+	</game>
+	<game name="Apples and Dolls (Brazil) (Unl)">
+		<description>Apples and Dolls (Brazil) (Unl)</description>
+		<rom name="Apples and Dolls (Brazil) (Unl).a26" size="4096" crc="E7514705" md5="E73838C43040BCBC83E4204A3E72EEF4" sha1="62E92508CF43ACC28BFF8B03A197137D56A5DF79" status="verified"/>
+	</game>
+	<game name="Aquaventure (Brazil) (Proto) (Unl)">
+		<description>Aquaventure (Brazil) (Proto) (Unl)</description>
+		<rom name="Aquaventure (Brazil) (Proto) (Unl).a26" size="8192" crc="7FA61FA0" md5="F69D4FCF76942FCD9BDF3FD8FDE790FB" sha1="CB400DE2653E125E704ABD8B0FE5DDDB43E3438B" status="verified"/>
+	</game>
+	<game name="Astrowar (Brazil) (Unl)">
+		<description>Astrowar (Brazil) (Unl)</description>
+		<rom name="Astrowar (Brazil) (Unl).a26" size="4096" crc="7B4B7EAF" md5="8F53A3B925F0FD961D9B8C4D46EE6755" sha1="B6F01797E3E8D80F4E33DA73E64AA2935AF96038"/>
+	</game>
+	<game name="Barnstorming (Brazil) (Unl)">
+		<description>Barnstorming (Brazil) (Unl)</description>
+		<rom name="Barnstorming (Brazil) (Unl).a26" size="4096" crc="281736D6" md5="5AE73916FA1DA8D38CEFF674FA25A78A" sha1="72F0BD35B49E4A35F6E51DF6EC8EA579B5A673EB" status="verified"/>
+	</game>
+	<game name="Beany Bopper (Brazil) (Unl)">
+		<description>Beany Bopper (Brazil) (Unl)</description>
+		<rom name="Beany Bopper (Brazil) (Unl).a26" size="4096" crc="624C9345" md5="6A9E0C72FAB92DF70084ECCD9061FDBD" sha1="73D55CF63CCABF881148E71DFDBD7D4445889F80" status="verified"/>
+	</game>
+	<game name="Beat'Em &amp; Eat'Em (Brazil) (Unl)">
+		<description>Beat'Em &amp; Eat'Em (Brazil) (Unl)</description>
+		<rom name="Beat'Em &amp; Eat'Em (Brazil) (Unl).a26" size="4096" crc="E4F66058" md5="6C25F58FD184632CA76020F589BB3767" sha1="8E8E334FA481698D0ADB7F9CB7852E49AC462EB9" status="verified"/>
+	</game>
+	<game name="Berzerk (Brazil) (Unl)">
+		<description>Berzerk (Brazil) (Unl)</description>
+		<rom name="Berzerk (Brazil) (Unl).a26" size="4096" crc="F973D708" md5="FAC28963307B6E85082CCD77C88325E7" sha1="6BFFBBE1207662DE89C7EA02C1FCD004071FB9E4" status="verified"/>
+	</game>
+	<game name="Bobby is Going Home (Brazil) (NTSC) (Unl)">
+		<description>Bobby is Going Home (Brazil) (NTSC) (Unl)</description>
+		<rom name="Bobby is Going Home (Brazil) (NTSC) (Unl).a26" size="4096" crc="358940E3" md5="075069AD80CDE15ECA69E3C98BD66714" sha1="E00202DA428DB2D05E30CDD59488E5E0D405C678" status="verified"/>
+	</game>
+	<game name="Bobby is Going Home (Brazil) (PAL) (Unl)">
+		<description>Bobby is Going Home (Brazil) (PAL) (Unl)</description>
+		<rom name="Bobby is Going Home (Brazil) (PAL) (Unl).a26" size="4096" crc="5C4A04C8" md5="3CBDF71BB9FD261FBC433717F547D738" sha1="876C3B01E68568100DB716BC69BF58189ACB72C2" status="verified"/>
+	</game>
+	<game name="Boxing (Brazil) (Unl)">
+		<description>Boxing (Brazil) (Unl)</description>
+		<rom name="Boxing (Brazil) (Unl).a26" size="2048" crc="0411AE6B" md5="A8B3EA6836B99BEA77C8F603CF1EA187" sha1="A7716AF544F0813CE7657BB8A1A55FF6088F09C3" status="verified"/>
+	</game>
+</datafile>

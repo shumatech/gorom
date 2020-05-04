@@ -1,0 +1,398 @@
+class GridData
+{
+  function this(columns) {
+    this._columns = columns;
+    this._data = [];
+    this._names = {};
+    this._rowIndex = [];
+
+    for (var col in columns)
+      this._names[col.name] = col;
+  }
+
+  get columns() {
+    return this._columns
+  }
+
+  // Reset row numbers to data indexes
+  function reset() {
+    this._rowIndex = []
+    for (var i = 0; i < this._data.length; i++)
+      this._rowIndex[i] = i;
+  }
+
+  // Return data at index
+  function at(index) {
+    return this._data[index];
+  }
+
+  // Length of data
+  get length() {
+    return this._data.length;
+  }
+
+  // Return data index for row
+  function index(rowNum) {
+    return this._rowIndex[rowNum];
+  }
+
+  // Notify that data at index was updated
+  function update(index) {
+      this._grid.update(index);
+  }
+
+  // Return data at row number
+  function row(rowNum) {
+    return this._data[this._rowIndex[rowNum]];
+  }
+
+  // Row iterator
+  get rows() {
+    var rowNum = -1;
+    return () => { if (++rowNum < this._rowIndex.length) return this._data[this._rowIndex[rowNum]]; }
+  }
+
+  // Count of rows
+  get rowCount() {
+    return this._rowIndex.length;
+  }
+
+  set grid(v) {
+    this._grid = v;
+  }
+
+  get data() {
+    return this._data;
+  }
+
+  set data(v) {
+    if (!(v instanceof Array))
+      this._data = [];
+    else
+      this._data = v;
+    this.reset();
+
+    if (this._grid)
+      this._grid.reset();
+  }
+
+
+  function filter(term) {
+    if (!term) {
+      this.reset();
+      return;
+    }
+
+    this._rowIndex = [];
+    term = term.toLowerCase();
+    for (var index = 0; index < this._data.length; index++) {
+      for (var col in this._columns) {
+        if (!col.num) {
+          var val = this._data[index][col.name];
+          if (val.toString().toLowerCase().search(term) != -1) {
+            this._rowIndex.push(index);
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  function sort(name, descend) {
+    var self = this;
+
+    function cmpLexical(a,b) {
+      var aVal = self._data[a][name].toString()
+      var bVal = self._data[b][name].toString()
+      var cmp = aVal.lexicalCompare(bVal, true)
+      return descend ? -cmp : cmp;
+    }
+
+    function cmpNumeric(a,b) {
+      var aVal = self._data[a][name]
+      var bVal = self._data[b][name]
+      var cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+      return descend ? -cmp : cmp;
+    }
+
+    if (this._names[name].sort == "numeric")
+      this._rowIndex.sort(cmpNumeric);
+    else
+      this._rowIndex.sort(cmpLexical);
+  }
+}
+
+class Grid : Element
+{
+  const PAGE_SIZE = 50
+
+  function attached() 
+  {
+    var self = this;
+
+    this.pageTop = 0
+    this.pageBottom = 0
+
+    this.data = eval(this.@["data"]);
+    assert this.data instanceof GridData;
+    this.data.grid = this;
+
+    this.search = Element.create(<div.search/>);
+    this.insert(this.search);
+
+    var start = Element.create(<button title="Start Search"/>);
+    this.search.insert(start);
+
+    var input = Element.create(<input|text placeholder="Search..." />);
+    this.search.insert(input);
+    this.input = input;
+
+    var clear = Element.create(<button title="Clear Search"/>);
+    this.search.insert(clear);
+
+    this.table = Element.create(<table/>);
+    this.insert(this.table);
+
+    this.thead = Element.create(<thead/>);
+    this.table.insert(this.thead);
+
+    this.tbody = Element.create(<tbody/>);
+    this.table.insert(this.tbody);
+
+    //this.initColumns();
+
+    this.tbody << event scroll (evt) { self.onTableScroll(evt); }
+
+    this << event keydown (evt) { self.onKeyEvent(evt); }
+
+    start << event click { self.startSearch(input.text); }
+
+    input << event keydown (evt) {
+      if (evt.type == Event.KEY_DOWN && evt.keyCode == Event.VK_RETURN) {
+        self.startSearch(input.text);
+        return true;
+      }
+    }
+
+    this.table << event mouseenter (evt) { self.tbody.focus = true; }
+
+    clear << event click {
+      input.text = "";
+      self.startSearch("");
+    }
+  }
+
+  function max(a,b) { return a > b ? a : b; }
+  function min(a,b) { return a < b ? a : b; }
+
+  function startSearch(term)
+  {
+    if (this.onSearchStart)
+      this.onSearchStart(term)
+
+    defer(() => {
+      this.data.filter(term);
+
+      this.removeSort();
+      this.refresh();
+
+      if (this.onSearchComplete)
+        this.onSearchComplete(term, this.data.rowCount);
+    });
+  }
+
+  function onTableScroll(evt)
+  {
+    if (evt.type != Event.SCROLL_POS || evt.scrollAxis != #vertical) {
+      return;
+    }
+
+    var scrollTop = evt.scrollPos;
+
+    var itemHeight = this.tbody.first.box(#height, #border);
+    var pageHeight = itemHeight * PAGE_SIZE;
+
+    // Find the pages the scroll view is in
+    var scrollPageTop = scrollTop / pageHeight;
+    var scrollPageBottom = (scrollTop + this.tbody.scroll(#height)) / pageHeight;
+
+    if (scrollPageTop < this.pageTop || scrollPageBottom > this.pageBottom) {
+      this.pageTop = scrollPageTop
+      this.pageBottom = scrollPageBottom
+      this.refresh();
+    }
+  }
+
+  function onKeyEvent(evt)
+  {
+    if (evt.type != Event.KEY_DOWN) {
+      return;
+    }
+    switch(evt.keyCode)
+    {
+      case Event.VK_HOME:  return true;
+      case Event.VK_END:   return true;
+      case Event.VK_UP:    return true;
+      case Event.VK_DOWN:  return true;
+      case Event.VK_PRIOR: return true;
+      case Event.VK_NEXT:  return true;
+    }
+  }
+
+  function initColumns()
+  {
+    var totalLen = 0;
+    var self = this;
+
+    // Find the maximum data length in each column
+    for (var col in this.data.columns) {
+      var maxLen = 0;
+      for (var row in this.data.rows) {
+        if (col.name in row) {
+          var len = row[col.name].length
+          if (len > maxLen) {
+            maxLen = len;
+          }
+        }
+      }
+
+      // Mark hidden if no data and hide flag is on
+      col.hidden = (maxLen == 0 && col.hide);
+
+      // Total length for visible columns with fill
+      if (col.fill && !col.hidden) {
+        col.maxLen = maxLen;
+        totalLen += maxLen;
+      }
+    }
+
+    // Add the header row
+    var tr = Element.create(<tr/>);
+    this.thead.content(tr);
+
+    // Add each column to the table
+    for (var col in this.data.columns) {
+      if (!col.hidden) {
+        var th = Element.create(<th>{col.name}</th>);
+        tr.insert(th);
+
+        if (col.fill && totalLen > 0) {
+          // Flex factor is determined from proportion of total data length
+          var flexFactor = col.maxLen.toFloat() / totalLen;
+          th.style#min-width = col.width;
+          th.style#width = flexFactor + "*";
+        }
+        else {
+          th.style#width = col.width;
+        }
+
+        th << event click { self.onHeaderClick(th); }
+      }
+    }
+  }
+
+  function removeSort()
+  {
+    if (var el = this.thead.$(th[order]))
+       el.attributes["order"] = undefined;
+  }
+
+  function onHeaderClick(th)
+  {
+    var order = th.attributes["order"];
+    var name = th.html;
+
+    if (this.onSortStart)
+      this.onSortStart(name)
+
+    defer(() => {
+      if (order == "ascend") {
+        this.data.sort(name, true);
+        th.attributes["order"] = "descend";
+      }
+      else {
+        if (!order) {
+          this.removeSort();
+        }
+        this.data.sort(name, false);
+        th.attributes["order"] = "ascend";
+      }
+
+      this.refresh();
+
+      if (this.onSortComplete)
+        this.onSortComplete(name)
+    });
+  }
+
+  function reset()
+  {
+    this.initColumns();
+    this.refresh();
+    this.input.text = "";
+  }
+
+  function insertRow(tablePos, rowNum)
+  {
+    var row = this.data.row(rowNum);
+    var tr = Element.create(<tr/>);
+    for(var col in this.data.columns) {
+      if (!col.hidden) {
+        var val = row[col.name];
+        if (val instanceof Element)
+          val = val.clone();
+        else if (val instanceof Float)
+          val = String.printf(col.float, val);
+        tr.insert(Element.create(<td>{val}</td>))
+      }
+    }
+    this.tbody.insert(tr, tablePos);
+    var self = this;
+    tr << event click { if (self.onRowClick) self.onRowClick(rowNum); }
+  }
+
+  function refresh()
+  {
+    var scrollTop = this.tbody.scroll(#top);
+
+    var firstRow = this.pageTop * PAGE_SIZE;
+    var lastRow = min((this.pageBottom + 1) * PAGE_SIZE, this.data.rowCount);
+
+    // If the table is empty, then insert a dummy row so we can get the row height
+    if (!this.tbody.first) {
+      var tr = Element.create(<tr/>);
+      var td = Element.create(<td/>)
+      tr.insert(td);
+      this.tbody.insert(tr);
+    }
+
+    var itemHeight = this.tbody.first.box(#height, #border);
+
+    var paddingTop = firstRow * itemHeight;
+    var paddingBottom = (this.data.rowCount - lastRow) * itemHeight;
+
+    this.tbody.style#padding-top = paddingTop
+    this.tbody.style#padding-bottom = paddingBottom
+
+    this.rowMap = {};
+    this.tbody.clear();
+    for (var rowNum = firstRow; rowNum < lastRow; rowNum++) {
+      var index = this.data.index(rowNum)
+      this.rowMap[index] = rowNum;
+      this.insertRow(rowNum - firstRow, rowNum)
+    }
+  }
+
+  function update(index)
+  {
+    if (!(index in this.rowMap))
+      return;
+
+    var rowNum = this.rowMap[index];
+    var firstRow = this.pageTop * PAGE_SIZE;
+    var tablePos = rowNum - firstRow;
+
+    this.tbody[tablePos].remove();
+    this.insertRow(tablePos, rowNum);
+  }
+} 

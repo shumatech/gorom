@@ -1,0 +1,166 @@
+namespace fixrom {
+  function clearResults() {
+    var results = $(#fixrom-results);
+    results.clear();
+    hide(results);
+
+    var machineGrid = $(#fixrom-machine-grid);
+    for (var v in machineGrid.data.data) {
+      v.Status = "-";
+    }
+    machineGrid.refresh();
+  }
+
+  function ready() {
+    var machineGrid = $(#fixrom-machine-grid);
+    var machineView = $(#fixrom-machine-view);
+    var romsView = $(#fixrom-roms-view);
+    var romsGrid = $(#fixrom-roms-grid);
+    var machineData = machineGrid.data;
+    var romData = romsGrid.data;
+    var results = $(#fixrom-results)
+
+    hide(machineView);
+    hide(romsView);
+    hide(results);
+
+    //
+    // Datfile input
+    //
+    $(#fixrom-datfile).onValueChanged = function() {
+      clearResults();
+
+      var dat = view.datChange(this.value);
+      if (dat == null) {
+        hide(machineView);
+        $(#fixrom-datfile).clear();
+        view.settings.add("fixrom-datfile", "");
+        return;
+      }
+
+      machineData.data = dat.Machines;
+      machineView.$(.header span).text = dat.Header.Name;
+      view.settings.add("fixrom-datfile", this.value);
+      unhide(machineView);
+    };
+
+    //
+    // Directory input
+    //
+    $(#fixrom-romsdir).onValueChanged = function() {
+      clearResults();
+
+      view.dirChange(this.value);
+      view.settings.add("fixrom-romsdir", this.value);
+
+      for (var v in machineData.data) {
+        v.Status = "-";
+      }
+      $(#fixrom-machine-grid).refresh();
+    };
+
+    //
+    // Machine Grid
+    //
+    machineGrid.onRowClick = function(rowNum) {
+      hide(machineView);
+      unhide(romsView);
+
+      var row = machineGrid.data.row(rowNum);
+      romsView.$(span).text = row["Name"] + " - " + row["Description"];
+
+      var index = machineGrid.data.index(rowNum);
+      var data = view.getRoms(index);
+      for (var v in data) {
+        v.Status = Element.create(<span class={v.Status}>{v.Status}</span>);
+      }
+
+      romData.data = data;
+    }
+
+    //
+    // ROMs View
+    //
+    romsView.$(.header button) << event click {
+      unhide(machineView);
+      hide(romsView);
+    }
+
+    romsView << event mousedown (evt) {
+      if (!romsView.attributes.hasClass("hidden") && evt.buttons != 1) {
+        unhide(machineView);
+        hide(romsView);
+      }
+    }
+
+    //
+    // Go button
+    //
+    $(#fixrom-go) << event click {
+      clearResults();
+      //view.fixrom();
+    }
+
+    //
+    // Restore settings
+    //
+    $(#fixrom-datfile).value = view.settings.get("fixrom-datfile", "")
+    $(#fixrom-romsdir).value = view.settings.get("fixrom-romsdir", "")
+
+    //
+    // Source Dirs
+    //
+    var srcdirs = $(#fixrom-srcdirs);
+    for (var val in view.settings.get("fixrom-srcdirs", ""))
+      srcdirs.addPath(val);
+
+    srcdirs.onValueChanged = function() {
+      view.settings.add("fixrom-srcdirs", srcdirs.values);
+    }    
+  }
+
+  function appendStat(el, name, val, tot) {
+      var percent = Math.round(10000.0 * val / tot) / 100;
+      el.$append(<dt>{name}</dt><dd>: {val} ({percent}%)</dd>);
+  }
+
+  function progress(percent, index, status) {
+    var machineGrid = $(#fixrom-machine-grid);
+    $(#fixrom-go).value = percent;
+    machineGrid.data.at(index).Status = Element.create(<span class={status}>{status}</span>);
+    machineGrid.data.update(index);
+    if (percent >= 1.0) {
+      var stats = view.fixromStats()
+      var results = $(#fixrom-results)
+      results.clear()
+
+      var machStats = stats.MachStats;
+      var machRomStats = stats.MachRomStats;
+      var romStats = stats.RomStats;
+      var percent;
+
+      var dl = results.$append(<dl/>);
+      dl.$append(<header>Machine Stats</header>);
+      appendStat(dl, "All OK", machStats.Ok, machStats.Total);
+      appendStat(dl, "ROMs Corrupt", machRomStats.Corrupt, machStats.Total);
+      appendStat(dl, "ROMs Bad Name", machRomStats.BadName, machStats.Total);
+      appendStat(dl, "ROMs Missing", machRomStats.Missing, machStats.Total);
+      appendStat(dl, "ROMs Extra", machRomStats.Extra, machStats.Total);
+      appendStat(dl, "Machine Missing", machStats.Missing, machStats.Total);
+      appendStat(dl, "Machine Corrupt", machStats.Corrupt, machStats.Total);
+      dl.$append(<dt>Total Machines</dt><dd>: {machStats.Total}</dd>);
+      dl.$append(<dt>Extra Machines</dt><dd>: {machStats.Extra}</dd>);
+
+      dl = results.$append(<dl/>);
+      dl.$append(<header>ROM Stats</header>);
+      appendStat(dl, "OK", romStats.Ok, romStats.Total);
+      appendStat(dl, "Missing", romStats.Missing, romStats.Total);
+      appendStat(dl, "Corrupt", romStats.Corrupt, romStats.Total);
+      appendStat(dl, "Bad Name", romStats.BadName, romStats.Total);
+      dl.$append(<dt>Total</dt><dd>: {romStats.Total}</dd>);
+      dl.$append(<dt>Extra</dt><dd>: {romStats.Extra}</dd>);
+
+      unhide(results);
+    }
+  }
+}

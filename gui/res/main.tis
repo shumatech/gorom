@@ -1,0 +1,469 @@
+const APP_NAME = "gorom";
+
+include "grid.tis";
+include "settings.tis";
+include "circle-progress.tis";
+include "path-input.tis";
+include "path-list.tis";
+
+namespace State
+{
+  const IDLE  = 1;
+  const BUSY  = 2;
+  const READY = 3;
+  const RUN   = 4;
+  const STOP  = 5;
+}
+
+var MachineData = new GridData([
+      { name:"Name",         width:80,  fill:true  },
+      { name:"Description",  width:120, fill:true  },
+      { name:"Year",         width:50,  fill:false, hide:true, },
+      { name:"Manufacturer", width:80,  fill:true,  hide:true, },
+      { name:"Category",     width:80,  fill:true,  hide:true, },
+      { name:"ROMs",         width:50,  fill:false, sort:"numeric" },
+      { name:"Status",       width:100, fill:false },
+    ]);
+
+var RomData = new GridData([
+      { name:"Name",         width:80,  fill:true  },
+      { name:"Size",         width:100, fill:false, sort:"numeric", float:"%.0f" },
+      { name:"Crc",          width:80,  fill:false },
+      { name:"Sha1",         width:80,  fill:true  },
+      { name:"Status",       width:100, fill:false },
+    ]);
+
+function errorMessage(message) {
+  log("ERROR: " + message);
+  view.dialog {
+    url: self.url("msgbox.html"),
+    parameters: { content: message },
+    alignment: -5,
+  }
+}
+
+event click $(#logo)
+{
+  //if (view.connectToInspector)
+  //  view.connectToInspector();
+  view.dialog {
+    url: self.url("about.html"),
+    width: 400,
+    height: 250,
+    parameters: view.about(),
+    alignment: -5,
+  }  
+}
+
+function self.closing() {
+  Settings.store();
+}
+
+function hide(el) {
+  el.attributes.addClass("hidden");
+}
+
+function isHidden(el) {
+  return el.attributes.hasClass("hidden");
+}
+
+function hideAll(el) {
+  for (var child in el ) {
+    child.attributes.addClass("hidden");
+  }
+}
+
+function unhide(el) {
+  el.attributes.removeClass("hidden");
+}
+
+function select(el) {
+  el.attributes.addClass("select");
+}
+
+function getSelect(el) {
+  return el.$(.select)
+}
+
+function unselectAll(el) {
+  for (var child in el ) {
+    child.attributes.removeClass("select");
+  }
+}
+
+function unselect(el) {
+  el.attributes.removeClass("select");
+}
+
+function clearResults() {
+  var results = $(#results);
+  results.clear();
+  hide(results);
+
+  $(#log-text).text = "";
+
+  for (var v in MachineData.data) {
+    v.Status = "-";
+  }
+
+  view.resetRoms();
+
+  var machineGrid = $(#machine-grid);
+  machineGrid.refresh();
+}
+
+function appendStat(el, name, val, tot) {
+  var percent = 0.0;
+  if (tot != 0)
+    percent = Math.round(10000.0 * val / tot) / 100;
+  el.$append(<dt>{name}</dt><dd>: {val} ({percent}%)</dd>);
+}
+
+function gotoState(state) {
+  if (state == self.uiState)
+    return;
+
+  if (state == State.IDLE) {
+    $(#datfile).disabled = false;
+    $(#romsdir).disabled = false;
+    $(#chkrom).state.disabled = true;
+    $(#fixrom).state.disabled = true;
+    $(#stop).state.disabled = true;
+    unhide($(#logo));
+    hide($(#progress));
+  }
+  else if (state == State.BUSY || state == State.STOP) {
+    $(#datfile).disabled = true;
+    $(#romsdir).disabled = true;
+    $(#chkrom).state.disabled = true;
+    $(#fixrom).state.disabled = true;
+    $(#stop).state.disabled = true;
+    unhide($(#logo));
+    hide($(#progress));
+  }
+  else if (state == State.READY) {
+    $(#datfile).disabled = false;
+    $(#romsdir).disabled = false;
+    $(#chkrom).state.disabled = false;
+    $(#fixrom).state.disabled = false;
+    $(#stop).state.disabled = true;
+    unhide($(#logo));
+    hide($(#progress));
+  }
+  else if (state == State.RUN) {
+    $(#datfile).disabled = true;
+    $(#romsdir).disabled = true;
+    $(#chkrom).state.disabled = true;
+    $(#fixrom).state.disabled = true;
+    $(#stop).state.disabled = false;
+    hide($(#logo));
+    unhide($(#progress));
+  }
+
+  self.uiState = state;
+}
+
+function setProgress(val) {
+  var progress = $(#progress);
+  var logo = $(#logo);
+
+  var prev = progress.value;
+  progress.value = val;
+
+  /*
+  // Only update the UI state if the progress changes state
+  if ((prev >= 1.0 && val < 1.0) || (prev < 1.0 && val >= 1.0))
+    uiState();
+  */
+}
+
+function status(progress, index, status) {
+  setProgress(progress);
+
+  if (index >= 0 && index < MachineData.length) {
+    var entry = MachineData.at(index);
+    entry.Status = Element.create(<span class={status}>{status}</span>);
+    MachineData.update(index);
+
+    info(entry.Name + " : " + status);
+  }
+}
+
+function fixromDone(stats) {
+  setProgress(1.0);
+  gotoState(State.READY);
+
+  if (stats) {
+    var results = $(#results)
+    results.clear()
+
+    log("Fix done");
+
+    var machStats = stats.MachStats;
+    var romStats = stats.RomStats;
+    var percent;
+
+    var dl = results.$append(<dl/>);
+    dl.$append(<header>Machine Stats</header>);
+    appendStat(dl, "OK", machStats.Ok, machStats.Total);
+    appendStat(dl, "Fixed", machStats.Fixed, machStats.Total);
+    appendStat(dl, "Failed", machStats.Failed, machStats.Total);
+    dl.$append(<dt>Total</dt><dd>: {machStats.Total}</dd>);
+
+    dl = results.$append(<dl/>);
+    dl.$append(<header>ROM Stats</header>);
+    appendStat(dl, "OK", romStats.Ok, romStats.Total);
+    appendStat(dl, "Copied", romStats.Copied, romStats.Total);
+    appendStat(dl, "Renamed", romStats.Renamed, romStats.Total);
+    appendStat(dl, "Not Found", romStats.NotFound, romStats.Total);
+    dl.$append(<dt>Total</dt><dd>: {romStats.Total}</dd>);
+
+    unhide(results);
+  }
+  else {
+      log("Fix stopped");
+  }
+}
+
+function chkromDone(stats) {
+  setProgress(1.0);
+  gotoState(State.READY);
+
+  if (stats) {
+    var results = $(#results)
+    results.clear()
+
+    log("Check Done");
+
+    var machStats = stats.MachStats;
+    var machRomStats = stats.MachRomStats;
+    var romStats = stats.RomStats;
+    var percent;
+
+    var dl = results.$append(<dl/>);
+    dl.$append(<header>Machine Stats</header>);
+    appendStat(dl, "All OK", machStats.Ok, machStats.Total);
+    appendStat(dl, "ROMs Corrupt", machRomStats.Corrupt, machStats.Total);
+    appendStat(dl, "ROMs Bad Name", machRomStats.BadName, machStats.Total);
+    appendStat(dl, "ROMs Missing", machRomStats.Missing, machStats.Total);
+    appendStat(dl, "ROMs Extra", machRomStats.Extra, machStats.Total);
+    appendStat(dl, "Machine Missing", machStats.Missing, machStats.Total);
+    appendStat(dl, "Machine Corrupt", machStats.Corrupt, machStats.Total);
+    dl.$append(<dt>Total Machines</dt><dd>: {machStats.Total}</dd>);
+    dl.$append(<dt>Extra Machines</dt><dd>: {machStats.Extra}</dd>);
+
+    dl = results.$append(<dl/>);
+    dl.$append(<header>ROM Stats</header>);
+    appendStat(dl, "OK", romStats.Ok, romStats.Total);
+    appendStat(dl, "Missing", romStats.Missing, romStats.Total);
+    appendStat(dl, "Corrupt", romStats.Corrupt, romStats.Total);
+    appendStat(dl, "Bad Name", romStats.BadName, romStats.Total);
+    dl.$append(<dt>Total</dt><dd>: {romStats.Total}</dd>);
+    dl.$append(<dt>Extra</dt><dd>: {romStats.Extra}</dd>);
+
+    unhide(results);
+  }
+  else {
+      log("Check stopped");
+  }
+}
+
+function log(message) {
+  var logLine = $(#log-line);
+  logLine.text = message;
+
+  var logText = $(#log-text);
+  logText.appendText(message + "\n");
+}
+
+function info(message) {
+  var logLine = $(#log-line);
+  logLine.text = message;
+}
+
+function defer(fn) {
+  self.timer(1ms, fn);
+}
+
+function datLoad(file) {
+  info("Loading DAT " + file + "...");
+
+  view.datLoad(file, (dat) => {
+    if (dat == null) {
+      MachineData.data = [];
+      gotoState(State.IDLE);
+      view.settings.add("datfile", "");
+      return;
+    }
+
+    info("DAT file loaded");
+
+    var machineView = $(#machine-view);
+    unhide(machineView);
+    MachineData.data = dat.Machines;
+    machineView.$(.header span).text = dat.Header.Name;
+    view.settings.add("datfile", file);
+
+    if ($(#romsdir).value != "") 
+      gotoState(State.READY);
+    else
+      gotoState(State.IDLE);      
+  });
+}
+
+function self.ready() {
+  //
+  // Settings
+  //
+  Settings.restore();
+
+  var machineView = $(#machine-view);
+  var romsView = $(#roms-view);
+  var results = $(#results)
+
+  hide(machineView);
+  hide(romsView);
+  hide(results);
+
+  gotoState(State.IDLE);
+
+  //
+  // Datfile input
+  //
+  var datfile = $(#datfile);
+  datfile.onValueChanged = () => {
+    clearResults();
+    hide(machineView);
+    if (datfile.value) {
+      gotoState(State.BUSY);
+      datLoad(datfile.value);
+    }
+    else {
+      gotoState(State.IDLE);
+    }
+  };
+
+  //
+  // Directory input
+  //
+  var romsdir = $(#romsdir)
+  romsdir.onValueChanged = function() {
+    clearResults();
+
+    if (romsdir.value) {
+      view.settings.add("romsdir", romsdir.value);
+
+      if (MachineData.data != []) 
+        gotoState(State.READY);
+      else
+        gotoState(State.IDLE);
+    }
+    else {
+      gotoState(State.IDLE);    
+    }
+  };
+
+  //
+  // Machine Grid
+  //
+  var machineGrid = $(#machine-grid);
+  machineGrid.onRowClick = (rowNum) => {
+    hide(machineView);
+    unhide(romsView);
+    
+    var row = MachineData.row(rowNum);
+    romsView.$(span).text = row["Name"] + " - " + row["Description"];
+
+    var index = MachineData.index(rowNum);
+    var data = view.getRoms(index);
+    for (var v in data) {
+      v.Status = Element.create(<span class={v.Status}>{v.Status}</span>);
+    }
+
+    RomData.data = data;
+  }
+
+  machineGrid.onSearchStart = (term) => {
+    info("Searching...");
+  }
+
+  machineGrid.onSearchComplete = (term, count) => {
+    if (term)
+      info(count + " results found")
+    else
+      info("Search cleared")
+  }
+
+  machineGrid.onSortStart = (term) => {
+    info("Sorting on " + term + "...");
+  }
+
+  machineGrid.onSortComplete = (term) => {
+    info("Sort done");
+  }
+
+  //
+  // ROMs View
+  //
+  romsView.$(.header button) << event click {
+    unhide(machineView);
+    hide(romsView);
+  }
+
+  romsView << event mousedown (evt) {
+    if (!romsView.attributes.hasClass("hidden") && evt.buttons != 1) {
+      unhide(machineView);
+      hide(romsView);
+    }
+  }
+
+  //
+  // Action buttons
+  //
+  var srcdirs = $(#srcdirs);
+  $(#fixrom) << event click {
+    clearResults();
+    setProgress(0.0);
+    gotoState(State.RUN)
+    view.fixrom(romsdir.value, srcdirs.values, fixromDone);
+  }
+
+  $(#chkrom) << event click {
+    clearResults();
+    setProgress(0.0);
+    gotoState(State.RUN)
+    view.chkrom(romsdir.value, chkromDone);
+  }
+
+  $(#stop) << event click {
+    info("Stopping current operation...")
+    view.stop();
+    gotoState(State.STOP);
+  }
+
+  //
+  // Restore settings
+  //
+  $(#datfile).value = view.settings.get("datfile", "")
+  $(#romsdir).value = view.settings.get("romsdir", "")
+
+  //
+  // Source Dirs
+  //
+  for (var val in view.settings.get("srcdirs", ""))
+    srcdirs.addPath(val);
+
+  srcdirs.onValueChanged = () => {
+    view.settings.add("srcdirs", srcdirs.values);
+  } 
+
+  //
+  // Log
+  //
+  var log = $(#log)
+  var logText = $(#log-text)
+  $(#log-button) << event click {
+    log.attributes.toggleClass("expand");
+    logText.scrollTo(0, logText.box(#bottom, #content));
+  }
+}

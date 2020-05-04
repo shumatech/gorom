@@ -1,0 +1,12 @@
+    @import url(sciter:msgbox.css);
+    @import url(theme.css);
+
+    #content {
+        background-color: color(dark);
+        color: color(text-normal);
+        border-bottom: solid 1px color(border);
+    }
+
+    #button-bar {
+        background-color: color(light);
+    }

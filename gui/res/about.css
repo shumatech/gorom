@@ -1,0 +1,28 @@
+@import url(theme.css);
+
+body {
+    background-color: color(dark);
+    color: color(text-normal);
+    margin: 0;
+    padding: 0;
+    border: solid 1px color(border);
+    flow: vertical;
+}
+
+#title {
+    height: 64dip;
+}
+
+#about {
+    text-align: center;
+    height:*;
+}
+
+#credit {
+    margin-top: *;
+    border-top: solid 1px color(border);
+    text-align: center;
+    padding: 0.5em 0.5em;
+    font-size: 7pt;
+    margin: 0;
+}

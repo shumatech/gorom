@@ -1,0 +1,20 @@
+tell application "Finder"
+    tell disk "GoROM"
+        open
+        set current view of container window to icon view
+        set toolbar visible of container window to false
+        set statusbar visible of container window to false
+        set the bounds of container window to {400, 100, 820, 420}
+        set theViewOptions to the icon view options of container window
+        set arrangement of theViewOptions to not arranged
+        set icon size of theViewOptions to 64
+        set text size of theViewOptions to 16
+        set background picture of theViewOptions to file ".background:background.png"
+        set position of item "GoROM.app" of container window to {80, 80}
+        set position of item "gorom" of container window to {80, 210}
+        set position of item "Applications" of container window to {280, 80}
+        set position of item "bin" of container window to {280, 210}
+        update without registering applications
+        delay 2
+    end tell
+end tell

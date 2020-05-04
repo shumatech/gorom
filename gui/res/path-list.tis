@@ -1,0 +1,89 @@
+class PathList : Behavior {
+  function changed() {
+    this.postEvent(Event.EDIT_VALUE_CHANGED);
+  }
+
+  property values(v) {
+    get {
+      var vals = [];
+      for (var el in this.list)
+        vals.push(el.html);
+      return vals;
+    }
+  }
+
+  function addPath(path) {
+    var list = this.list;
+    var li = list.$append(<li>{path}</li>);
+
+    if (list.length == 1) {
+      select(li);
+    }
+    li << event click {
+      unselectAll(list);
+      select(li);
+    }
+  }
+
+  function attached() {
+    var filter = this.@["filter"];
+    var type = this.@["type"];
+    var name = this.@["name"];
+
+    var sel;
+    if (type == "file")
+      sel = () => { return view.selectFile(#open, this.@["filter"]); }
+    else if (type == "dir")
+      sel = () => { return view.selectFolder(#open); }
+    else
+      throw "bad type";
+
+    var div = this.$append(<div/>);
+    div.$append(<span>{name}</span>);
+
+    var add = div.$append(<button#path-list-add title="Add"/>);
+    var del = div.$append(<button#path-list-del title="Delete"/>);
+    var up = div.$append(<button#path-list-up title="Move up"/>);
+    var down = div.$append(<button#path-list-down title="Move down"/>);
+
+    this.list = this.$append(<ul></ul>);
+
+    var self = this;
+    add << event click {
+      var fn = sel(filter);
+      if (fn) {
+        var path = URL.toPath(fn);
+        self.addPath(path);
+        self.changed();
+      }
+    }
+
+    del << event click {
+      var li = getSelect(self.list)
+      if (li) {
+        if (li.next)
+          select(li.next);
+        else if (li.prior)
+          select(li.prior);
+        li.remove();
+        self.changed();
+      }
+    }
+
+    up << event click {
+      var li = getSelect(self.list)
+      if (li && li.prior) {
+        li.swap(li.prior);
+        self.changed();
+      }
+    }
+
+    down << event click {
+      var li = getSelect(self.list)
+      if (li && li.next) {
+        li.swap(li.next);
+        self.changed();
+      }
+    }
+  }
+}

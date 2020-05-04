@@ -1,0 +1,15 @@
+Torrent Name : dirroms
+Announce     : 
+Piece Length : 32768 (32 KiB)
+Pieces       : 2
+Files        : 9
+Total Length : 36864 (36 KiB)
+machine1/rom_1.bin 4096 (4 KiB)
+machine1/rom_2.bin 4096 (4 KiB)
+machine2/rom_3.bin 4096 (4 KiB)
+machine2/rom_4.bin 4096 (4 KiB)
+machine2/rom_5.bin 4096 (4 KiB)
+machine3/rom_6.bin 4096 (4 KiB)
+machine3/rom_7.bin 4096 (4 KiB)
+machine3/rom_8.bin 4096 (4 KiB)
+machine3/rom_9.bin 4096 (4 KiB)

@@ -1,0 +1,49 @@
+<html window-icon="images/gorom.svg" window-resizable="true">
+  <head>
+    <title>GoROM</title>
+    <style>
+      @import "main.css";
+    </style>
+    <script type="text/tiscript">
+      include "main.tis";
+    </script>
+  </head>
+<body>
+  <div#controls>
+    <div#logo-progress>
+      <img#logo src="images/gorom.svg" title="About GoROM">
+      <circle-progress#progress>
+    </div>
+    <div#inputs>
+      <path-input#datfile type="file" name="DAT File" filter="DAT Files (*.dat,*.xml)|*.dat;*.xml|All Files (*.*)|*.*"/>
+      <path-input#romsdir type="dir" name="Directory"/>
+    </div>
+    <button#stop.action title="Stop Operation">Stop</button>
+    <button#fixrom.action title="Fix ROMs">Fix</button>
+    <button#chkrom.action title="Check ROMs">Check</button>
+  </div>
+
+  <path-list#srcdirs type="dir" name="Source Directories"/>
+
+  <div#grid>
+    <div#machine-view>
+      <div.header><span/></div>
+      <div#results.stats/>
+      <grid#machine-grid data="MachineData">
+    </div>
+    <div#roms-view>
+      <div.header><button/><span/></div>
+      <grid#roms-grid data="RomData">
+    </div>
+  </div>
+
+  <div#log>
+    <button#log-button title="Expand log area"/>
+    <div#log-area>
+      <textarea#log-text readonly maxlength=1000000/>
+      <span#log-line/>
+    </div>
+  </div>
+
+</body>
+</html>
