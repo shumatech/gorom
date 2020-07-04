@@ -10,7 +10,7 @@ BINDIR=bin
 RESDIR=res
 INSTALLDIR=install
 MKDIR=mkdir -p
-VERSION:=$(shell git describe --tags --always)
+VERSION?:=$(shell git describe --tags --always)
 BUILD:=$(shell date +%FT%T%z)
 Q?=@
 OS:=$(shell uname -s | cut -c -7 | tr [A-Z] [a-z])
@@ -131,7 +131,7 @@ $(1)_test:
 	$(Q)go test -v -cover gorom/$(2)
 $(1)_upx: $(BINDIR)/$(1)$(EXE)
 	@echo PACK $$<
-	$(Q)upx $$<
+	$(Q)upx -qqt $$< || upx $$<
 endef
 
 $(foreach app,$(APPS),$(eval $(call target,$(app),$($(app)_DIR))))
