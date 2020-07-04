@@ -27,7 +27,7 @@ gorom_EXTLDFLAGS=-static
 goromui_EXTLDFLAGS=-Wl,-subsystem,windows -static res/icon.o res/gorom.o
 SCITER=sciter.dll
 REVISION:=$(shell git rev-list --count --first-parent HEAD)
-ARCHIVE=gorom-windows-$(VERSION).tgz
+ARCHIVE=gorom-windows-$(VERSION).zip
 
 bin/goromui.exe: res/icon.o res/gorom.o
 
@@ -42,7 +42,8 @@ res/gorom.o: res/gorom.rc.out
 
 install:
 	@echo INSTALL
-	$(Q)zip $(ARCHIVE) $(foreach app,$(APPS),$(app)$(EXE)) $(SCITER)
+	$(Q)cd $(BINDIR); \
+	zip $(ARCHIVE) $(foreach app,$(APPS),$(app)$(EXE)) $(SCITER)
 
 #
 # Linux
@@ -82,7 +83,7 @@ app_clean:
 	@echo CLEAN APP
 	$(Q)rm -rf $(BINDIR)/$(APP)
 
-dmg: gorom goromui
+dmg: app gorom
 	hdiutil create -ov -megabytes 25 -fs HFS+ -volname $(VOLUME) $(BINDIR)/$(DMG)
 	hdiutil attach -noautoopen $(BINDIR)/$(DMG)
 	cp -R $(BINDIR)/$(APP) /Volumes/$(VOLUME)/
@@ -101,7 +102,7 @@ dmg_clean:
 	$(Q)rm -f $(BINDIR)/$(DMG)
 
 
-clean: clean_app clean_dmg
+clean: app_clean dmg_clean
 install: dmg
 
 endif

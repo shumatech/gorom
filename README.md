@@ -156,7 +156,7 @@ Example output:
 
 An example of all output suppressed except for machines with errors:
 
-    $ chkrom --chkrom "../MAME 0.220 ROMs (merged).xml" -c -o -r -H -e -p 
+    $ gorom --chkrom "../MAME 0.220 ROMs (merged).xml" -c -o -r -H -e -p 
     1on1gov.zip : ROM ERRORS
     3b1 : MISSING
     pucman : CORRUPT
