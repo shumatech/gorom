@@ -27,6 +27,11 @@ import (
     "github.com/jessevdk/go-flags"
 )
 
+var (
+    Version string
+    Build string
+)
+
 ///////////////////////////////////////////////////////////////////////////////
 // Main
 ///////////////////////////////////////////////////////////////////////////////
@@ -42,6 +47,7 @@ type Options struct {
         FltDat      string    `short:"F" long:"fltdat"  description:"Filter DATFILE fields with regular expressions" value-name:"DATFILE"`
         FuzzyMv     bool      `short:"m" long:"fuzzymv" description:"Rename files in one directory to the closest fuzzy\nmatch in another directory"`
         GoRomDB     bool      `short:"G" long:"goromdb" description:"Perform operations on the .gorom.db database"`
+        Version     bool      `short:"V" long:"version" description:"Display the version and build date"`
     } `group:"Operations"`
 
     App struct {
@@ -359,6 +365,10 @@ func main() {
     }
     if options.Operations.GoRomDB {
         err = goromdb()
+    }
+    if options.Operations.Version {
+        term.Printf("GoROM Version %s built on %s\n", Version, Build)
+        term.Println("Copyright (c) 2020 ShumaTech")
     }
 
     term.CursorShow()
