@@ -28,6 +28,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/sciter-sdk/go-sciter v0.5.1-0.20200602150116-89a4dd09b0f8 h1:gTFOIgUHkYyChf+555OCj2WNOeo8QqBPrTs/mhfuLTQ=
 github.com/sciter-sdk/go-sciter v0.5.1-0.20200602150116-89a4dd09b0f8/go.mod h1:myhbEunWE4R+6J7GxJsr4SU4q0OIMOEbWFJ2qYzIdPc=
+github.com/sciter-sdk/go-sciter v0.5.1-0.20210404081253-a04e052a2813 h1:2ExEamZW3xMEEGm63vKZ3VTUuG5s6Oh+VhFRK1YXoNM=
+github.com/sciter-sdk/go-sciter v0.5.1-0.20210404081253-a04e052a2813/go.mod h1:myhbEunWE4R+6J7GxJsr4SU4q0OIMOEbWFJ2qYzIdPc=
 github.com/sergi/go-diff v1.1.0 h1:we8PVUC3FE2uYfodKH/nBHMSetSfHDR6scGdBi+erh0=
 github.com/sergi/go-diff v1.1.0/go.mod h1:STckp+ISIX8hZLjrqAeVduY0gWCT9IjLuqbuNXdaHfM=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

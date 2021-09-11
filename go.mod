@@ -12,7 +12,7 @@ require (
 	github.com/klauspost/compress v1.10.8
 	github.com/lxn/win v0.0.0-20191128105842-2da648fda5b4 // indirect
 	github.com/paul-mannino/go-fuzzywuzzy v0.0.0-20200127021948-54652b135d0e
-	github.com/sciter-sdk/go-sciter v0.5.1-0.20200602150116-89a4dd09b0f8
+	github.com/sciter-sdk/go-sciter v0.5.1-0.20210404081253-a04e052a2813
 	github.com/sergi/go-diff v1.1.0 // indirect
 	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
 	golang.org/x/sys v0.0.0-20200602225109-6fdc65e7d980
