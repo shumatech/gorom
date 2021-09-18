@@ -4,7 +4,7 @@ gorom_DIR=cli
 gorom_SRCS=main.go fixrom.go chkrom.go chktor.go dir2dat.go lstor.go fltdat.go fuzzymv.go torzip.go goromdb.go
 goromui_DIR=gui
 goromui_SRCS=main.go chkrom.go fixrom.go
-common_SRCS=romdb.go datfile.go gorom.go romio.go torrent.go checksum/checksum.go term/term.go torzip/torzip.go
+common_SRCS=romdb/romdb.go dat/dat.go util/util.go romio/romio.go torrent/torrent.go checksum/checksum.go term/term.go torzip/torzip.go
 
 BINDIR=bin
 RESDIR=res

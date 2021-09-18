@@ -22,7 +22,6 @@ import (
     "crypto/sha1"
     "encoding/xml"
     "encoding/hex"
-    "github.com/klauspost/compress/zip"
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -137,48 +136,31 @@ func Crc32File(path string) (Crc32, error) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Sha1Zip - Execute the callback for evey file in Zip including the
-// file's SHA1 checksum. If the callback returns an error, then the function
-// stops and the error is propogated up.
+// ChecksumReader - Return both the CRC32 and SHA1 hash for the io.Reader
 ///////////////////////////////////////////////////////////////////////////////
+func ChecksumReader(rd io.Reader) (Crc32, Sha1, error) {
+    buffer := make([]byte, 256 * 1024)
+    sha1Hash := sha1.New()
+    crc32Hash := crc32.NewIEEE()
 
-type Sha1ZipFunc func(fh *zip.File, sha1 Sha1) error
-
-func Sha1Zip(path string, zipFunc Sha1ZipFunc) error {
-    reader, err := zip.OpenReader(path)
-    if err != nil {
-        return err
-    }
-
-    defer reader.Close()
-
-    for _, fh := range reader.File {
-        hash := sha1.New()
-
-        rc, err := fh.Open()
-        if err != nil {
-            return err
+    var sha1 Sha1
+    var crc32 Crc32
+    for {
+        len, err := rd.Read(buffer)
+        if (len > 0) {
+            sha1Hash.Write(buffer[:len])
+            crc32Hash.Write(buffer[:len])
         }
-
-        _, err = io.Copy(hash, rc)
         if err != nil {
-            return err
-        }
-
-        err = rc.Close()
-        if err != nil {
-            return err
-        }
-
-        var sha1 Sha1
-        copy(sha1[:], hash.Sum(nil))
-
-        err = zipFunc(fh, sha1)
-        if err != nil {
-            return err
+            if err == io.EOF {
+                break
+            }
+            return crc32, sha1, err
         }
     }
 
-    return nil
+    copy(sha1[:], sha1Hash.Sum(nil))
+    copy(crc32[:], crc32Hash.Sum(nil))
+
+    return crc32, sha1, nil
 }
-

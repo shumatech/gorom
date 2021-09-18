@@ -3,8 +3,8 @@
 
 <datafile>
 	<header>
-		<name>dirroms</name>
-		<description>Dir_ROMs</description>
+		<name>rarroms</name>
+		<description>Rar_ROMs</description>
 		<version></version>
 		<author></author>
 	</header>

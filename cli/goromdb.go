@@ -18,12 +18,12 @@ package main
 import (
     "fmt"
 
-    "gorom"
     "gorom/term"
+    "gorom/romdb"
     "gorom/checksum"
 )
 
-func dbLookup(rdb *gorom.RomDB, hexstr string) error {
+func dbLookup(rdb *romdb.RomDB, hexstr string) error {
     sum, ok := checksum.NewSha1String(hexstr)
     if !ok {
         return fmt.Errorf("Invalid checksum")
@@ -41,7 +41,7 @@ func dbLookup(rdb *gorom.RomDB, hexstr string) error {
     return nil
 }
 
-func dbScan(rdb *gorom.RomDB) error {
+func dbScan(rdb *romdb.RomDB) error {
     goLimit := 0
     if options.App.NoGo {
         goLimit = 1
@@ -50,22 +50,22 @@ func dbScan(rdb *gorom.RomDB) error {
         if err == nil {
             term.Println(machPath)
         } else {
-            term.Println(machPath, err)            
+            term.Println(machPath, err)
         }
     })
 }
 
-func dbDump(rdb *gorom.RomDB) error {
+func dbDump(rdb *romdb.RomDB) error {
     rdb.Dump()
     return nil
 }
 
 func goromdb() error {
-    rdb, err := gorom.OpenRomDB(".")
+    rdb, err := romdb.OpenRomDB(".")
     if err != nil {
         return err;
     }
-    defer rdb.Close()   
+    defer rdb.Close()
 
     if options.GoRomDB.Lookup != "" {
         return dbLookup(rdb, options.GoRomDB.Lookup)

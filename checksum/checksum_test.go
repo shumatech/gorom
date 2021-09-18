@@ -18,8 +18,6 @@ package checksum
 import (
     "gorom/test"
     "testing"
-
-    "github.com/klauspost/compress/zip"
 )
 
 func runSha1FileTest(t *testing.T, df *test.DatFile) {
@@ -74,37 +72,4 @@ func runCrc32FileTest(t *testing.T, df *test.DatFile) {
 
 func TestCrc32File(t *testing.T) {
     test.ForEachDat(t, test.ZipDats, runCrc32FileTest)
-}
-
-func runSha1ZipTest(t *testing.T, df *test.DatFile) {
-    defer test.Chdir(t, df.DataPath)()
-
-    for machName, machine := range df.Machines {
-        count := 0
-        err := Sha1Zip(df.MachPath(machName), func (fh *zip.File, actSha1 Sha1) error {
-            rom, ok := machine.Roms[fh.Name]
-            if !ok {
-                test.Fail(t, "unexpected file")
-            }
-            expSha1, ok := NewSha1String(rom.Sha1)
-            if !ok {
-                test.Fail(t, "invalid sha1")
-            }
-            if expSha1 != actSha1 {
-                test.Fail(t, "checksum mismatch")
-            }
-            count++
-            return nil
-        })
-        if err != nil {
-            test.Fail(t, err)
-        }
-        if count != len(machine.Roms) {
-            test.Fail(t, "file count mismatch")
-        }
-    }
-}
-
-func TestSha1Zip(t *testing.T) {
-    test.ForEachDat(t, test.ZipDats, runSha1ZipTest)
 }

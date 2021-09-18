@@ -13,7 +13,7 @@
 //
 //  You should have received a copy of the GNU General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-package gorom
+package romdb
 
 import (
     "bytes"
@@ -24,6 +24,8 @@ import (
     "runtime"
     "time"
 
+    "gorom/util"
+    "gorom/romio"
     "gorom/checksum"
     "gorom/term"
 
@@ -72,7 +74,7 @@ func (rdb *RomDB) Close() {
     rdb.db.Close()
 }
 
-func (rdb *RomDB) addFiles(machPath string, files []*RomFile, checksums []checksum.Sha1) error {
+func (rdb *RomDB) addFiles(machPath string, files []*romio.RomFile, checksums []checksum.Sha1) error {
     return rdb.db.Batch(func(tx *bolt.Tx) error {
         rb, err := tx.CreateBucketIfNotExists([]byte(RomBucket))
         if err != nil {
@@ -166,7 +168,7 @@ func (rdb *RomDB) deleteChecksum(sum checksum.Sha1) error {
     })
 }
 
-func checksumRom(rr RomReader, rf *RomFile) (checksum.Sha1, error) {
+func checksumRom(rr romio.RomReader, rf *romio.RomFile) (checksum.Sha1, error) {
     rc, err := rr.Open(rf)
     if err != nil {
         return checksum.Sha1{}, err
@@ -193,12 +195,12 @@ func (rdb *RomDB) Dump() {
     })
 }
 
-func (rdb *RomDB) ChecksumZip(zr *ZipReader, checksumFunc ChecksumFunc) error {
-    files := zr.Files()
+func (rdb *RomDB) ChecksumZip(rr romio.RomReader, checksumFunc ChecksumFunc) error {
+    files := rr.Files()
     checksums := make([]checksum.Sha1, len(files))
     sumAll := false
     delAll := false
-    machPath := path.Base(zr.Path())
+    machPath := path.Base(rr.Path())
 
     // If any file is out of date or not present, then delete all entries
     // and regenerate all checksums
@@ -251,7 +253,7 @@ func (rdb *RomDB) ChecksumZip(zr *ZipReader, checksumFunc ChecksumFunc) error {
 
     if sumAll {
         for i, file := range files {
-            checksums[i], err = checksumRom(zr, file)
+            checksums[i], err = checksumRom(rr, file)
             if err != nil {
                 return err
             }
@@ -278,15 +280,15 @@ func (rdb *RomDB) ChecksumZip(zr *ZipReader, checksumFunc ChecksumFunc) error {
     return nil
 }
 
-func (rdb *RomDB) ChecksumDir(dr *DirReader, checksumFunc ChecksumFunc) error {
-    files := dr.Files()
-    machPath := path.Base(dr.Path())
+func (rdb *RomDB) ChecksumDir(rr romio.RomReader, checksumFunc ChecksumFunc) error {
+    files := rr.Files()
+    machPath := path.Base(rr.Path())
     sumAll := false
 
     // For each file, if there is no database entry then we need to calc the checksum.
     // If there is a database entry and the modification date is the same, then
     // we can use the database checksum, else recalc the checksum.
-    addFiles := []*RomFile{}
+    addFiles := []*romio.RomFile{}
     addIndex := []int{}
     err := rdb.db.View(func(tx *bolt.Tx) error {
         rb := tx.Bucket([]byte(RomBucket))
@@ -330,7 +332,7 @@ func (rdb *RomDB) ChecksumDir(dr *DirReader, checksumFunc ChecksumFunc) error {
     if sumAll {
         checksums := make([]checksum.Sha1, len(files))
         for i, file := range files {
-            checksums[i], err = checksumRom(dr, file)
+            checksums[i], err = checksumRom(rr, file)
             if err != nil {
                 return err
             }
@@ -345,7 +347,7 @@ func (rdb *RomDB) ChecksumDir(dr *DirReader, checksumFunc ChecksumFunc) error {
     } else if len(addFiles) > 0 {
         checksums := make([]checksum.Sha1, len(addFiles))
         for i, file := range addFiles {
-            checksums[i], err = checksumRom(dr, file)
+            checksums[i], err = checksumRom(rr, file)
             if err != nil {
                 return err
             }
@@ -364,11 +366,11 @@ func (rdb *RomDB) ChecksumDir(dr *DirReader, checksumFunc ChecksumFunc) error {
 
 type ChecksumFunc func(name string, sum checksum.Sha1) error
 
-func (rdb *RomDB) Checksum(rr RomReader, checksumFunc ChecksumFunc) error {
-    if IsDirReader(rr) {
-        return rdb.ChecksumDir(rr.(*DirReader), checksumFunc)
+func (rdb *RomDB) Checksum(rr romio.RomReader, checksumFunc ChecksumFunc) error {
+    if romio.IsDirReader(rr) {
+        return rdb.ChecksumDir(rr, checksumFunc)
     } else {
-        return rdb.ChecksumZip(rr.(*ZipReader), checksumFunc)
+        return rdb.ChecksumZip(rr, checksumFunc)
     }
 }
 
@@ -418,7 +420,7 @@ func (rdb *RomDB) Lookup(checksum checksum.Sha1) (*RomDBEntry, error) {
 type ScanFunc func(machPath string, err error)
 
 type ScanResults struct {
-    romKeys StringSet
+    romKeys util.StringSet
     name string
     err error
 }
@@ -441,8 +443,8 @@ func (rdb *RomDB) scanChecksum(name string, ch chan ScanResults, stop chan struc
         return
     }
 
-    romKeys := NewStringSet()
-    rr, err := OpenRomReader(path.Join(rdb.Dir, name))
+    romKeys := util.NewStringSet()
+    rr, err := romio.OpenRomReader(path.Join(rdb.Dir, name))
     if err == nil {
         if rr != nil {
             err := rdb.Checksum(rr, func(name string, sum checksum.Sha1) error {
@@ -464,7 +466,7 @@ func (rdb *RomDB) scanChecksum(name string, ch chan ScanResults, stop chan struc
     ch <- ScanResults{ name: name, romKeys: romKeys, err: err }
 }
 
-func scanResults(romKeys StringSet, ch chan ScanResults, scanFunc ScanFunc) {
+func scanResults(romKeys util.StringSet, ch chan ScanResults, scanFunc ScanFunc) {
     results := <- ch
     if scanFunc != nil {
         scanFunc(results.name, results.err)
@@ -478,19 +480,19 @@ func scanResults(romKeys StringSet, ch chan ScanResults, scanFunc ScanFunc) {
 
 func (rdb *RomDB) Scan(goLimit int, stop chan struct{}, scanFunc ScanFunc) error {
     ch := make(chan ScanResults, 1)
-    romKeys := NewStringSet()
+    romKeys := util.NewStringSet()
     if goLimit <= 0 {
         goLimit = runtime.NumCPU()
     }
 
     goCount := 0
-    err := ScanDir(rdb.Dir, true, func(info os.FileInfo) error {
+    err := util.ScanDir(rdb.Dir, true, func(info os.FileInfo) error {
         if goCount == goLimit {
-            scanResults(romKeys, ch, scanFunc)            
+            scanResults(romKeys, ch, scanFunc)
         } else {
             goCount++
         }
-        
+
         go rdb.scanChecksum(info.Name(), ch, stop)
 
         if isStop(stop) {

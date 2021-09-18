@@ -13,11 +13,11 @@
 //
 //  You should have received a copy of the GNU General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-package gorom
+package torrent
 
 import (
     "os"
-    bencode "github.com/jackpal/bencode-go"    
+    bencode "github.com/jackpal/bencode-go"
 )
 
 type TorrentInfo struct {

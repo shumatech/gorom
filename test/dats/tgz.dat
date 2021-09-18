@@ -3,8 +3,8 @@
 
 <datafile>
 	<header>
-		<name>dirroms</name>
-		<description>Dir_ROMs</description>
+		<name>tgzroms</name>
+		<description>Tgz_ROMs</description>
 		<version></version>
 		<author></author>
 	</header>

@@ -18,12 +18,13 @@ package main
 import (
     "crypto/sha1"
 
-    "gorom"
+    "gorom/torrent"
+    "gorom/util"
     "gorom/term"
 )
 
 func lstor(path string) error {
-    torrent, err := gorom.ParseTorrent(path)
+    torrent, err := torrent.ParseTorrent(path)
     if err != nil {
         return err
     }
@@ -31,7 +32,7 @@ func lstor(path string) error {
     if !options.App.NoHeader {
         term.Printf("Torrent Name : %s\n", torrent.Info.Name)
         term.Printf("Announce     : %s\n", torrent.Announce)
-        term.Printf("Piece Length : %d (%s)\n", torrent.Info.PieceLength, gorom.HumanizePow2(int64(torrent.Info.PieceLength)))
+        term.Printf("Piece Length : %d (%s)\n", torrent.Info.PieceLength, util.HumanizePow2(int64(torrent.Info.PieceLength)))
         term.Printf("Pieces       : %d\n", len(torrent.Info.Pieces) / sha1.Size)
         term.Printf("Files        : %d\n", len(torrent.Info.Files))
 
@@ -39,16 +40,16 @@ func lstor(path string) error {
         for _, file := range torrent.Info.Files {
             total += file.Length
         }
-        term.Printf("Total Length : %d (%s)\n", total, gorom.HumanizePow2(total))
+        term.Printf("Total Length : %d (%s)\n", total, util.HumanizePow2(total))
     }
 
     for _, file := range torrent.Info.Files {
         if options.LsTor.NoSize {
             term.Println(joinPath(file.Path))
         } else {
-            term.Printf("%s %d (%s)\n", joinPath(file.Path), file.Length, gorom.HumanizePow2(file.Length))
+            term.Printf("%s %d (%s)\n", joinPath(file.Path), file.Length, util.HumanizePow2(file.Length))
         }
     }
-    
+
     return nil
 }

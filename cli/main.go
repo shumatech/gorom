@@ -21,7 +21,7 @@ import (
     "os"
     "path/filepath"
 
-    "gorom"
+    "gorom/util"
     "gorom/term"
 
     "github.com/jessevdk/go-flags"
@@ -297,7 +297,7 @@ func main() {
         usage(err.Error())
     }
 
-    gorom.Progress = !options.App.NoProgress
+    util.Progress = !options.App.NoProgress
 
     ops := parser.Command.Group.Find("Operations")
     if ops == nil {
@@ -320,9 +320,9 @@ func main() {
         term.IsTerminal = false
     }
 
-    gorom.Progress = !options.App.NoProgress
+    util.Progress = !options.App.NoProgress
 
-    gorom.SignalInit(func() { term.CursorShow() });
+    util.SignalInit(func() { term.CursorShow() });
 
     term.Init()
     term.CursorHide()
@@ -338,14 +338,14 @@ func main() {
     }
     if options.Operations.ChkTor != "" {
         torrent := filepath.ToSlash(options.Operations.LsTor)
-        ok, err = chktor(torrent)        
+        ok, err = chktor(torrent)
     }
     if options.Operations.LsTor != "" {
         torrent := filepath.ToSlash(options.Operations.LsTor)
-        err = lstor(torrent)        
+        err = lstor(torrent)
     }
     if options.Operations.TorZip {
-        zipFiles := gorom.ToSlash(args)
+        zipFiles := util.ToSlash(args)
         err = torzipFiles(zipFiles)
     }
     if options.Operations.Dir2Dat {

@@ -25,7 +25,7 @@ import (
     "path"
     "regexp"
 
-    "gorom"
+    "gorom/dat"
     "gorom/term"
 )
 
@@ -98,7 +98,7 @@ func fltdat(datFile string) error {
         case xml.StartElement:
             filter := false
             if v.Name.Local == "machine" || v.Name.Local == "game" {
-                var machine gorom.Machine
+                var machine dat.Machine
                 decoder.DecodeElement(&machine, &v)
 
                 filter = !findRegExp(machine.Name, nameList) ||

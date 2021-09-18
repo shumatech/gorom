@@ -21,7 +21,10 @@ import (
     "runtime"
     "path"
 
-    "gorom"
+    "gorom/dat"
+    "gorom/romdb"
+    "gorom/romio"
+    "gorom/util"
     "gorom/term"
 )
 
@@ -42,7 +45,7 @@ type Rename struct {
     tmpPath string
 }
 
-func printHeader(header *gorom.Header) error {
+func printHeader(header *dat.Header) error {
     if !options.App.NoHeader {
         term.Println(header.Name)
     }
@@ -65,7 +68,7 @@ type CopyResults struct {
 func copyRoms(machPath string, isDir bool, roms []CopyRom, ch chan CopyResults) {
     results := CopyResults{ machPath: machPath }
 
-    writer, err := gorom.CreateRomWriterTemp(".", isDir)
+    writer, err := romio.CreateRomWriterTemp(".", isDir)
     if err != nil {
         results.errmsg = "create temp writer"
     } else {
@@ -80,7 +83,7 @@ func copyRoms(machPath string, isDir bool, roms []CopyRom, ch chan CopyResults) 
 
         for index := writer.First(); index >= 0; index = writer.Next() {
             rom := roms[index]
-            reader, err := gorom.OpenRomReader(rom.srcPath)
+            reader, err := romio.OpenRomReader(rom.srcPath)
             if err != nil {
                 results.errmsg = rom.srcPath
                 break
@@ -90,7 +93,7 @@ func copyRoms(machPath string, isDir bool, roms []CopyRom, ch chan CopyResults) 
                 err = fmt.Errorf("unable to open reader")
                 break
             }
-            err = gorom.CopyRom(writer, rom.dstName, reader, rom.srcName)
+            err = romio.CopyRom(writer, rom.dstName, reader, rom.srcName)
             reader.Close()
             if err != nil {
                 results.errmsg = fmt.Sprintf("copy %s to %s", rom.srcName, writer.Path())
@@ -110,14 +113,14 @@ func copyRoms(machPath string, isDir bool, roms []CopyRom, ch chan CopyResults) 
 
 func copyProcess(renameList *[]Rename, ch chan CopyResults) {
     results := <-ch
-    gorom.Progressf(results.machPath)
+    util.Progressf(results.machPath)
     if results.err != nil {
-        gorom.Progressf("")
+        util.Progressf("")
         term.Printf(term.Red("%s : %s : %s\n", results.machPath, results.errmsg, results.err))
         if results.tmpPath != "" {
             err := os.RemoveAll(results.tmpPath)
             if err != nil {
-                gorom.Progressf("")
+                util.Progressf("")
                 term.Println(term.Red("trash %s: %s", results.tmpPath, err))
             }
         }
@@ -130,20 +133,20 @@ func fixrom(datFile string, machines []string, dirs []string) (bool, error) {
     var renameList []Rename
     var FixromStats FixromStats
 
-    var machSet gorom.StringSet
+    var machSet util.StringSet
     if options.FixRom.ExtraTrash {
-        machSet = gorom.NewStringSet()
+        machSet = util.NewStringSet()
     }
 
     // Current directory takes precedence
     dirs = append([]string{"."}, dirs...)
 
     // Scan all of the provided directories
-    romDBs := []*gorom.RomDB{}
+    romDBs := []*romdb.RomDB{}
     for _, dir := range dirs {
         term.Printf("Scanning directory %s\n", dir)
 
-        rdb, err := gorom.OpenRomDB(dir)
+        rdb, err := romdb.OpenRomDB(dir)
         if err != nil {
             return false, err
         }
@@ -155,9 +158,9 @@ func fixrom(datFile string, machines []string, dirs []string) (bool, error) {
             }
             err = rdb.Scan(goLimit, nil, func(machPath string, err error) {
                 if err != nil {
-                    gorom.Progressf(term.Red("%s: %s\n", machPath, err))
+                    util.Progressf(term.Red("%s: %s\n", machPath, err))
                 } else {
-                    gorom.Progressf("%s", machPath)
+                    util.Progressf("%s", machPath)
                 }
             })
             if err != nil {
@@ -165,7 +168,7 @@ func fixrom(datFile string, machines []string, dirs []string) (bool, error) {
             }
         }
         romDBs = append(romDBs, rdb)
-        gorom.Progressf("");
+        util.Progressf("");
     }
 
     goCount := 0
@@ -176,7 +179,7 @@ func fixrom(datFile string, machines []string, dirs []string) (bool, error) {
 
     ch := make(chan CopyResults, 1)
 
-    err := gorom.ParseDatFile(datFile, machines, printHeader, func(machine *gorom.Machine) error {
+    err := dat.ParseDatFile(datFile, machines, printHeader, func(machine *dat.Machine) error {
         badNames := map[string]string{}
         extras := []string{}
 
@@ -187,17 +190,17 @@ func fixrom(datFile string, machines []string, dirs []string) (bool, error) {
         }
 
         // Validate all the ROM checksums in the machine
-        valid, err := gorom.ValidateChecksums(machine, romDBs[0], badNames, &extras, nil)
+        valid, err := dat.ValidateChecksums(machine, romDBs[0], badNames, &extras, nil)
         if err != nil {
             term.Printf(term.Red("%s: %s\n", machine.Name, err))
         }
-        gorom.Progressf("")
+        util.Progressf("")
 
         // Machine is OK if there are no extras and all ROMS are OK
         if valid && len(extras) == 0 {
             ok := true
             for _, rom := range machine.Roms {
-                if rom.Status != gorom.RomOk {
+                if rom.Status != dat.RomOk {
                     ok = false
                     break
                 }
@@ -229,12 +232,12 @@ func fixrom(datFile string, machines []string, dirs []string) (bool, error) {
         // Copy OK and bad name ROMs from the old machine if it is valid
         if valid {
             for _, rom := range machine.Roms {
-                if rom.Status == gorom.RomOk {
+                if rom.Status == dat.RomOk {
                     if !options.App.NoOk {
                         term.Printf("  %s : %s\n", rom.Name, term.Green("OK"))
                     }
                     roms = append(roms, CopyRom{ dstName: rom.Name, srcName: rom.Name, srcPath: machine.Path })
-                } else  if rom.Status == gorom.RomBadName {
+                } else  if rom.Status == dat.RomBadName {
                     term.Printf("  %s : %s\n", rom.Name, term.Magenta("RENAME from %s", badNames[rom.Name]))
                     roms = append(roms, CopyRom{ dstName: rom.Name, srcName: badNames[rom.Name], srcPath: machine.Path })
                 }
@@ -244,11 +247,11 @@ func fixrom(datFile string, machines []string, dirs []string) (bool, error) {
         // Find corrupt/missing ROMS in sources and copy to new machine
         ok := true
         for _, rom := range machine.Roms {
-            if rom.Status == gorom.RomUnknown || rom.Status == gorom.RomCorrupt || rom.Status == gorom.RomMissing {
-                var entry *gorom.RomDBEntry
-                var rdb *gorom.RomDB
+            if rom.Status == dat.RomUnknown || rom.Status == dat.RomCorrupt || rom.Status == dat.RomMissing {
+                var entry *romdb.RomDBEntry
+                var rdb *romdb.RomDB
 
-                // Walk the sources to find the checksum 
+                // Walk the sources to find the checksum
                 for _, rdb = range romDBs {
                     entry, err = rdb.Lookup(rom.Sha1)
                     if err != nil {
@@ -301,7 +304,7 @@ func fixrom(datFile string, machines []string, dirs []string) (bool, error) {
         for ; goCount > 0; goCount-- {
             copyProcess(&renameList, ch)
         }
-        gorom.Progressf("")
+        util.Progressf("")
     }
 
     // Rename all of the temp files and move old files to trash
@@ -313,12 +316,12 @@ func fixrom(datFile string, machines []string, dirs []string) (bool, error) {
         }
 
         for _, r := range renameList {
-            gorom.Progressf(r.machPath)
+            util.Progressf(r.machPath)
             _, err = os.Stat(r.machPath)
             if err == nil || os.IsExist(err) {
                 err = os.Rename(r.machPath, path.Join(".trash", r.machPath))
                 if err != nil {
-                    gorom.Progressf("")
+                    util.Progressf("")
                     term.Println(term.Red("trash %s: %s", r.machPath, err))
                     continue
                 }
@@ -326,18 +329,18 @@ func fixrom(datFile string, machines []string, dirs []string) (bool, error) {
 
             err = os.Rename(r.tmpPath, r.machPath)
             if err != nil {
-                gorom.Progressf("")
+                util.Progressf("")
                 term.Println(term.Red("rename %s to %s: %s", r.tmpPath, r.machPath, err))
             }
         }
-        gorom.Progressf("")
+        util.Progressf("")
     }
 
     // Delete extra files if option given
     if options.FixRom.ExtraTrash && len(machines) == 0 {
-        err = gorom.ScanDir(".", true, func(file os.FileInfo) error {
+        err = util.ScanDir(".", true, func(file os.FileInfo) error {
             machPath := file.Name()
-            machName := gorom.MachName(machPath)
+            machName := romio.MachName(machPath)
             if !machSet.IsSet(machName) {
                 FixromStats.Extra++
                 term.Printf("%s : %s\n", machPath, term.Blue("EXTRA"))

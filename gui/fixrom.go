@@ -16,12 +16,15 @@
 package main
 
 import (
-    "gorom"
-    "gorom/checksum"
     "fmt"
     "os"
     "path"
     "runtime"
+
+    "gorom/dat"
+    "gorom/romdb"
+    "gorom/romio"
+    "gorom/checksum"
 )
 
 type FixMachStats struct {
@@ -76,7 +79,7 @@ func copyRoms(machPath string, isDir bool, roms []CopyRom, ch chan CopyResults) 
         return
     }
 
-    writer, err := gorom.CreateRomWriterTemp(".", isDir)
+    writer, err := romio.CreateRomWriterTemp(".", isDir)
     if err != nil {
         results.errmsg = "create temp writer"
     } else {
@@ -96,7 +99,7 @@ func copyRoms(machPath string, isDir bool, roms []CopyRom, ch chan CopyResults) 
                 err = stopError
                 break
             }
-            reader, err := gorom.OpenRomReader(rom.srcPath)
+            reader, err := romio.OpenRomReader(rom.srcPath)
             if err != nil {
                 results.errmsg = rom.srcPath
                 break
@@ -106,7 +109,7 @@ func copyRoms(machPath string, isDir bool, roms []CopyRom, ch chan CopyResults) 
                 err = fmt.Errorf("unable to open reader")
                 break
             }
-            err = gorom.CopyRom(writer, rom.dstName, reader, rom.srcName)
+            err = romio.CopyRom(writer, rom.dstName, reader, rom.srcName)
             reader.Close()
             if err != nil {
                 results.errmsg = fmt.Sprintf("copy %s to %s", rom.srcName, writer.Path())
@@ -183,11 +186,11 @@ func fixromStart(dir string, srcDirs []string, defaultDir bool) error {
     }
 
     // Scan all of the provided directories
-    romDBs := []*gorom.RomDB{}
+    romDBs := []*romdb.RomDB{}
     for _, dir := range srcDirs {
         call("log", "Scanning " + dir)
 
-        rdb, err := gorom.OpenRomDB(dir)
+        rdb, err := romdb.OpenRomDB(dir)
         if err != nil {
             return err
         }
@@ -224,7 +227,7 @@ func fixromStart(dir string, srcDirs []string, defaultDir bool) error {
         fixMachStats.Total++
 
         // Validate all the ROM checksums in the machine
-        valid, err := gorom.ValidateChecksums(machine, romDBs[0], badNames, &extras, func(name string, sum checksum.Sha1) error {
+        valid, err := dat.ValidateChecksums(machine, romDBs[0], badNames, &extras, func(name string, sum checksum.Sha1) error {
             if isStop() {
                 return stopError
             }
@@ -241,7 +244,7 @@ func fixromStart(dir string, srcDirs []string, defaultDir bool) error {
         if valid && len(extras) == 0 {
             ok := true
             for _, rom := range machine.Roms {
-                if rom.Status != gorom.RomOk {
+                if rom.Status != dat.RomOk {
                     ok = false
                     break
                 }
@@ -272,11 +275,11 @@ func fixromStart(dir string, srcDirs []string, defaultDir bool) error {
         // Copy OK and bad name ROMs from the old machine if it is valid
         if valid {
             for _, rom := range machine.Roms {
-                if rom.Status == gorom.RomOk {
+                if rom.Status == dat.RomOk {
                     fixRomStats.Ok++
                     fixRomStats.Total++
                     roms = append(roms, CopyRom{ dstName: rom.Name, srcName: rom.Name, srcPath: machine.Path })
-                } else  if rom.Status == gorom.RomBadName {
+                } else  if rom.Status == dat.RomBadName {
                     rom.Status = RomFixRename
                     fixRomStats.Renamed++
                     fixRomStats.Total++
@@ -288,9 +291,9 @@ func fixromStart(dir string, srcDirs []string, defaultDir bool) error {
         // Find corrupt/missing ROMS in sources and copy to new machine
         ok := true
         for _, rom := range machine.Roms {
-            if rom.Status == gorom.RomUnknown || rom.Status == gorom.RomCorrupt || rom.Status == gorom.RomMissing {
-                var entry *gorom.RomDBEntry
-                var rdb *gorom.RomDB
+            if rom.Status == dat.RomUnknown || rom.Status == dat.RomCorrupt || rom.Status == dat.RomMissing {
+                var entry *romdb.RomDBEntry
+                var rdb *romdb.RomDB
 
                 // Walk the sources to find the checksum 
                 for _, rdb = range romDBs {

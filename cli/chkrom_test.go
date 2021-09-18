@@ -51,6 +51,27 @@ func TestChkRomDir(t *testing.T) {
     })
 }
 
+func TestChkRom7z(t *testing.T) {
+    test.RunDiffTest(t, "roms/7z", "chkrom/7z.out", func() error {
+        options = Options{}
+        return runChkRom(t, "../../dats/7z.dat", nil, true)
+    })
+}
+
+func TestChkRomRar(t *testing.T) {
+    test.RunDiffTest(t, "roms/rar", "chkrom/rar.out", func() error {
+        options = Options{}
+        return runChkRom(t, "../../dats/rar.dat", nil, true)
+    })
+}
+
+func TestChkRomTgz(t *testing.T) {
+    test.RunDiffTest(t, "roms/tgz", "chkrom/tgz.out", func() error {
+        options = Options{}
+        return runChkRom(t, "../../dats/tgz.dat", nil, true)
+    })
+}
+
 func TestChkRomBadZip(t *testing.T) {
     test.RunDiffTest(t, "roms/badzip", "chkrom/badzip.out", func() error {
         options = Options{}

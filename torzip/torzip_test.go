@@ -16,8 +16,6 @@
 package torzip
 
 import (
-    "gorom/test"
-    "gorom/checksum"
     "io"
     "io/ioutil"
     "os"
@@ -25,6 +23,9 @@ import (
     "testing"
 
     "github.com/klauspost/compress/zip"
+
+    "gorom/test"
+    "gorom/checksum"
 )
 
 func fileFilter(out *[]byte) {

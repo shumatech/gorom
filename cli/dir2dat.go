@@ -20,11 +20,11 @@ import (
     "strings"
     "path"
 
-    "gorom"
+    "gorom/dat"
+    "gorom/util"
     "gorom/checksum"
+    "gorom/romio"
     "gorom/term"
-
-    "github.com/klauspost/compress/zip"
 )
 
 const xmlDeclaration string = `<?xml version="1.0" encoding="UTF-8"?>
@@ -50,36 +50,6 @@ const machineEnd string = `	</machine>`
 const romTag string = `		<rom name="%s" size="%d" crc="%08x" sha1="%x"/>
 `
 
-func machZip(path string) error {
-    return checksum.Sha1Zip(path, func(fh *zip.File, sha1 checksum.Sha1) error {
-        term.Printf(romTag, gorom.ToDatPath(fh.Name), fh.UncompressedSize64, fh.CRC32, sha1)
-        return nil
-    })
-}
-
-func machDir(dir string) error {
-    return gorom.ScanDir(dir, true, func(file os.FileInfo) error {
-        path := path.Join(dir, file.Name())
-        if file.IsDir() {
-            err := machDir(path)
-            if err != nil {
-                return err
-            }
-        } else {
-            sha1, err := checksum.Sha1File(path)
-            if err != nil {
-                return err
-            }
-            crc32, err := checksum.Crc32File(path)
-            if err != nil {
-                return err
-            }
-            term.Printf(romTag, gorom.ToDatPath(path), file.Size(), crc32, sha1)
-        }
-        return nil
-    })
-}
-
 func dir2dat(machFilter []string) error {
     machMap := make(map[string]bool)
     for _, arg := range machFilter {
@@ -92,7 +62,7 @@ func dir2dat(machFilter []string) error {
     term.Println(datafileStart)
     term.Printf(headerTag, options.Dir2Dat.Name, options.Dir2Dat.Desc)
 
-    err := gorom.ScanDir(".", true, func(file os.FileInfo) error {
+    err := util.ScanDir(".", true, func(file os.FileInfo) error {
         name := file.Name()
         machName := strings.TrimSuffix(name, path.Ext(path.Base(name)))
 
@@ -102,13 +72,17 @@ func dir2dat(machFilter []string) error {
             }
         }
 
-        if file.IsDir() {
-            term.Printf(machineStart, machName, machName)
-            machDir(name)
-            term.Println(machineEnd)
-        } else if path.Ext(name) == ".zip" {
-            term.Printf(machineStart, machName, machName)
-            machZip(name)
+        valid := false;
+        romio.ChecksumMach(name, func(name string, size int64,
+                                     crc32 checksum.Crc32, sha1 checksum.Sha1) error {
+            if !valid {
+                term.Printf(machineStart, machName, machName)
+                valid = true
+            }
+            term.Printf(romTag, dat.ToDatPath(name), size, crc32, sha1)
+            return nil
+        })
+        if valid {
             term.Println(machineEnd)
         }
 

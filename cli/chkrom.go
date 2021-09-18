@@ -21,7 +21,10 @@ import (
     "os"
     "runtime"
 
-    "gorom"
+    "gorom/util"
+    "gorom/dat"
+    "gorom/romdb"
+    "gorom/romio"
     "gorom/term"
 )
 
@@ -34,7 +37,7 @@ type ChkromStats struct {
     Total   int
 }
 
-const (   
+const (
     MachOk = 1 << iota
     MachMissing
     MachCorrupt
@@ -47,9 +50,9 @@ const (
 
 type Logger interface {
     header(name string)
-    machine(machine *gorom.Machine, status int, info ...string)
+    machine(machine *dat.Machine, status int, info ...string)
     extra(path string)
-    rom(rom *gorom.Rom, status int, info ...string)
+    rom(rom *dat.Rom, status int, info ...string)
     machineChkromStats(machChkromStats *ChkromStats, machRomChkromStats *ChkromStats)
     romChkromStats(romChkromStats *ChkromStats)
     close()
@@ -70,7 +73,7 @@ func (log *StdLogger) header(name string) {
     term.Println(name)
 }
 
-func (log *StdLogger) machine(machine *gorom.Machine, status int, info ...string) {
+func (log *StdLogger) machine(machine *dat.Machine, status int, info ...string) {
     var str string
     switch {
     case status == MachOk:
@@ -78,7 +81,7 @@ func (log *StdLogger) machine(machine *gorom.Machine, status int, info ...string
     case status == MachMissing:
         str = term.Yellow("MISSING")
     case status == MachCorrupt:
-        str = term.Red("CORRUPT")            
+        str = term.Red("CORRUPT")
         if len(info) > 0 {
             str += term.Red(fmt.Sprintf(" (%s)", info[0]))
         }
@@ -102,18 +105,18 @@ func (log *StdLogger) extra(path string) {
     term.Printf("%s : %s\n", path, term.Blue("EXTRA"))
 }
 
-func (log *StdLogger) rom(rom *gorom.Rom, status int, info ...string) {
+func (log *StdLogger) rom(rom *dat.Rom, status int, info ...string) {
     var str string
     switch status {
-    case gorom.RomOk:
+    case dat.RomOk:
         str = term.Green("OK")
-    case gorom.RomMissing:
+    case dat.RomMissing:
         str = term.Yellow("MISSING")
-    case gorom.RomUnknown:
+    case dat.RomUnknown:
         str = term.Blue("EXTRA")
-    case gorom.RomCorrupt:
+    case dat.RomCorrupt:
         str = term.Red("CORRUPT")
-    case gorom.RomBadName:
+    case dat.RomBadName:
         str = term.Magenta(fmt.Sprintf("BAD NAME (%s)", info[0]))
     default:
         panic("invalid rom status")
@@ -187,7 +190,7 @@ func (log *JsonLogger) header(name string) {
     log.value.Header.Name = name
 }
 
-func (log *JsonLogger) machine(machine *gorom.Machine, status int, info ...string) {
+func (log *JsonLogger) machine(machine *dat.Machine, status int, info ...string) {
     var str string
     switch {
     case status == MachOk:
@@ -216,18 +219,18 @@ func (log *JsonLogger) extra(path string) {
     log.value.Extras = append(log.value.Extras, path)
 }
 
-func (log *JsonLogger) rom(rom *gorom.Rom, status int, info ...string) {
+func (log *JsonLogger) rom(rom *dat.Rom, status int, info ...string) {
     var str string
     switch status {
-    case gorom.RomOk:
+    case dat.RomOk:
         str = "ok"
-    case gorom.RomMissing:
+    case dat.RomMissing:
         str = "missing"
-    case gorom.RomUnknown:
+    case dat.RomUnknown:
         str = "extra"
-    case gorom.RomCorrupt:
+    case dat.RomCorrupt:
         str = "corrupt"
-    case gorom.RomBadName:
+    case dat.RomBadName:
         str = "badname"
     default:
         panic("invalid rom status")
@@ -255,7 +258,7 @@ func (log *JsonLogger) close() {
 ///////////////////////////////////////////////////////////////////////////////
 
 type ValidResults struct {
-    machine *gorom.Machine
+    machine *dat.Machine
     badNames map[string]string
     extras []string
     ok bool
@@ -269,16 +272,16 @@ var (
     logger Logger
 )
 
-func chkromValidate(machine *gorom.Machine, rdb *gorom.RomDB, ch chan ValidResults) {
+func chkromValidate(machine *dat.Machine, rdb *romdb.RomDB, ch chan ValidResults) {
     badNames := map[string]string{}
     extras := []string{}
 
     var err error
     var ok bool
     if !options.ChkRom.SizeOnly {
-        ok, err = gorom.ValidateChecksums(machine, rdb, badNames, &extras, nil)
+        ok, err = dat.ValidateChecksums(machine, rdb, badNames, &extras, nil)
     } else {
-        ok, err = gorom.ValidateSizes(machine, &extras, nil)
+        ok, err = dat.ValidateSizes(machine, &extras, nil)
     }
 
     ch <- ValidResults{ machine: machine, badNames: badNames, extras: extras, ok: ok, err: err}
@@ -304,11 +307,11 @@ func chkromResults(ch chan ValidResults) {
     } else if ok {
         for _, rom := range machine.Roms {
             switch rom.Status {
-            case gorom.RomCorrupt:
+            case dat.RomCorrupt:
                 machStatus |= MachRomCorrupt
-            case gorom.RomBadName:
+            case dat.RomBadName:
                 machStatus |= MachRomBadName
-            case gorom.RomMissing:
+            case dat.RomMissing:
                 machStatus |= MachRomMissing
             }
         }
@@ -342,22 +345,22 @@ func chkromResults(ch chan ValidResults) {
             romChkromStats.Total++
 
             switch rom.Status {
-            case gorom.RomOk:
+            case dat.RomOk:
                 if !options.App.NoOk && !options.ChkRom.NoRom {
                     logger.rom(rom, rom.Status)
                 }
                 romChkromStats.Ok++
-            case gorom.RomCorrupt:
+            case dat.RomCorrupt:
                 if !options.ChkRom.NoRom {
                     logger.rom(rom, rom.Status)
                 }
                 romChkromStats.Corrupt++;
-            case gorom.RomBadName:
+            case dat.RomBadName:
                 if !options.ChkRom.NoRom {
                     logger.rom(rom, rom.Status, badNames[rom.Name])
                 }
                 romChkromStats.BadName++;
-            case gorom.RomMissing:
+            case dat.RomMissing:
                 if !options.ChkRom.NoRom {
                     logger.rom(rom, rom.Status)
                 }
@@ -367,7 +370,7 @@ func chkromResults(ch chan ValidResults) {
 
         for _, name := range extras {
             if !options.ChkRom.NoRom {
-                logger.rom(&gorom.Rom{Name: name}, gorom.RomUnknown)
+                logger.rom(&dat.Rom{Name: name}, dat.RomUnknown)
             }
             romChkromStats.Extra++
         }
@@ -390,12 +393,12 @@ func chkrom(datFile string, machines []string) (bool, error) {
         logger = NewStdLogger()
     }
 
-    machSet := gorom.NewStringSet()
+    machSet := util.NewStringSet()
 
-    var rdb *gorom.RomDB
+    var rdb *romdb.RomDB
     var err error
     if !options.ChkRom.SizeOnly {
-        rdb, err = gorom.OpenRomDB(".")
+        rdb, err = romdb.OpenRomDB(".")
         if err != nil {
             return false, err
         }
@@ -410,13 +413,13 @@ func chkrom(datFile string, machines []string) (bool, error) {
         goLimit = runtime.NumCPU()
     }
 
-    err = gorom.ParseDatFile(datFile, machines, func(header *gorom.Header) error {
+    err = dat.ParseDatFile(datFile, machines, func(header *dat.Header) error {
         if !options.App.NoHeader {
             logger.header(header.Name)
         }
-        gorom.Progressf("Parsing DAT file...\n")
+        util.Progressf("Parsing DAT file...\n")
         return nil
-    }, func(machine *gorom.Machine) error {
+    }, func(machine *dat.Machine) error {
         machSet.Set(machine.Name)
 
         if goCount == goLimit {
@@ -438,9 +441,9 @@ func chkrom(datFile string, machines []string) (bool, error) {
     }
 
     if len(machines) == 0 && !options.App.NoExtra {
-        err = gorom.ScanDir(".", true, func(file os.FileInfo) error {
+        err = util.ScanDir(".", true, func(file os.FileInfo) error {
             path := file.Name()
-            name := gorom.MachName(path)
+            name := romio.MachName(path)
             if !machSet.IsSet(name) {
                 machChkromStats.Extra++;
                 logger.extra(path)

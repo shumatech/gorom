@@ -284,7 +284,7 @@ func RunDiffFilterTest(t *testing.T, chdir string, expectPath string, testFunc f
 
         expectOut, err = ioutil.ReadAll(file)
         if err != nil {
-            Fail(t, err)            
+            Fail(t, err)
         }
     }
     defer file.Close()

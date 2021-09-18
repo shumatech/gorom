@@ -23,7 +23,8 @@ import (
     "crypto/sha1"
     "path"
 
-    "gorom"
+    "gorom/torrent"
+    "gorom/util"
     "gorom/term"
 )
 
@@ -31,7 +32,7 @@ func joinPath(path []string) string {
     return strings.Join(path, "/")
 }
 
-func verifyFiles(files []gorom.TorrentFile) (missing int, badSize int) {
+func verifyFiles(files []torrent.TorrentFile) (missing int, badSize int) {
     term.Println("\nVerifying files...")
     for _, file := range files {
         path := joinPath(file.Path)
@@ -53,7 +54,7 @@ func verifyFiles(files []gorom.TorrentFile) (missing int, badSize int) {
     return
 }
 
-func fillPiece(piece *bytes.Buffer, pieceLen uint32, files []gorom.TorrentFile, index *int, offset *int64) error {
+func fillPiece(piece *bytes.Buffer, pieceLen uint32, files []torrent.TorrentFile, index *int, offset *int64) error {
     left := int64(pieceLen)
 
     for *index < len(files) && left > 0 {
@@ -101,8 +102,8 @@ func fillPiece(piece *bytes.Buffer, pieceLen uint32, files []gorom.TorrentFile, 
     return nil
 }
 
-func extrasDir(dir string, fileSet gorom.StringSet, extras *int) error {
-    return gorom.ScanDir(dir, true, func(file os.FileInfo) error {
+func extrasDir(dir string, fileSet util.StringSet, extras *int) error {
+    return util.ScanDir(dir, true, func(file os.FileInfo) error {
         path := path.Join(dir, file.Name())
         if file.IsDir() {
             err := extrasDir(path, fileSet, extras)
@@ -119,10 +120,10 @@ func extrasDir(dir string, fileSet gorom.StringSet, extras *int) error {
     })
 }
 
-func findExtras(files []gorom.TorrentFile) (int, error) {
+func findExtras(files []torrent.TorrentFile) (int, error) {
     term.Println("\nFinding extra files...")
 
-    fileSet := gorom.NewStringSet()
+    fileSet := util.NewStringSet()
 
     for _, file := range files {
         path := joinPath(file.Path)
@@ -146,7 +147,7 @@ func checksumPiece(piece *bytes.Buffer, checksum []byte) (bool, error) {
     return bytes.Equal(hash.Sum(nil), checksum), nil
 }
 
-func validPieces(info *gorom.TorrentInfo) (bool, error) {
+func validPieces(info *torrent.TorrentInfo) (bool, error) {
     term.Println("\nValidating pieces...")
 
     buffer := make([]byte, 0, info.PieceLength)
@@ -160,7 +161,7 @@ func validPieces(info *gorom.TorrentInfo) (bool, error) {
     pieceCount := len(info.Pieces) / sha1.Size
     pieceNum := 0
     for ; pieceNum < pieceCount; pieceNum++ {
-        gorom.Progressf("%d/%d", pieceNum + 1, pieceCount)
+        util.Progressf("%d/%d", pieceNum + 1, pieceCount)
         prevIndex := index
         err := fillPiece(piece, info.PieceLength, info.Files, &index, &offset)
         if err != nil {
@@ -184,7 +185,7 @@ func validPieces(info *gorom.TorrentInfo) (bool, error) {
         }
     }
 
-    gorom.Progressf("")
+    util.Progressf("")
 
     if (pieceNum == pieceCount) {
         term.Println(term.Green("OK"))
@@ -194,7 +195,7 @@ func validPieces(info *gorom.TorrentInfo) (bool, error) {
 }
 
 func chktor(path string) (bool, error) {
-    torrent, err := gorom.ParseTorrent(path)
+    torrent, err := torrent.ParseTorrent(path)
     if err != nil {
         return false, err
     }
@@ -202,7 +203,7 @@ func chktor(path string) (bool, error) {
     if !options.App.NoHeader {
         term.Printf("Torrent Name : %s\n", torrent.Info.Name)
         term.Printf("Announce     : %s\n", torrent.Announce)
-        term.Printf("Piece Length : %d (%s)\n", torrent.Info.PieceLength, gorom.HumanizePow2(int64(torrent.Info.PieceLength)))
+        term.Printf("Piece Length : %d (%s)\n", torrent.Info.PieceLength, util.HumanizePow2(int64(torrent.Info.PieceLength)))
         term.Printf("Pieces       : %d\n", len(torrent.Info.Pieces) / sha1.Size)
         term.Printf("Files        : %d\n", len(torrent.Info.Files))
 
@@ -210,7 +211,7 @@ func chktor(path string) (bool, error) {
         for _, file := range torrent.Info.Files {
             total += file.Length
         }
-        term.Printf("Total Length : %d (%s)\n", total, gorom.HumanizePow2(total))
+        term.Printf("Total Length : %d (%s)\n", total, util.HumanizePow2(total))
     }
 
     missing, badSize := verifyFiles(torrent.Info.Files)

@@ -13,14 +13,13 @@
 //
 //  You should have received a copy of the GNU General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-package gorom
+package util
 
 import (
     "fmt"
     "math"
     "os"
     "os/signal"
-    "path"
     "path/filepath"
     "sort"
     "strings"
@@ -60,17 +59,6 @@ func ToSlash(paths []string) []string {
         slashes[i] = filepath.ToSlash(paths[i])
     }
     return slashes
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Machine name from path
-///////////////////////////////////////////////////////////////////////////////
-func MachName(machPath string) string {
-    filename := path.Base(machPath)
-    if path.Ext(filename) == ".zip" {
-        filename = strings.TrimSuffix(filename, path.Ext(filename))
-    }
-    return filename
 }
 
 ///////////////////////////////////////////////////////////////////////////////

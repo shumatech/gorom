@@ -3,4 +3,3 @@
 /bin
 .gorom.db
 coverage.out
-*.tgz

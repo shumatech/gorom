@@ -22,7 +22,8 @@ import (
     "sort"
     "strings"
 
-    "gorom"
+    "gorom/util"
+    "gorom/romio"
     "gorom/term"
 
     "github.com/paul-mannino/go-fuzzywuzzy"
@@ -41,7 +42,7 @@ type match struct {
     score int
 }
 
-func dirMap(dir string, useBase bool) (*gorom.StringBiMap, error) {
+func dirMap(dir string, useBase bool) (*util.StringBiMap, error) {
     fh, err := os.Open(dir)
     if err != nil {
         return nil, err
@@ -54,7 +55,7 @@ func dirMap(dir string, useBase bool) (*gorom.StringBiMap, error) {
 
     fh.Close()
 
-    dmap := gorom.NewStringBiMap()
+    dmap := util.NewStringBiMap()
 
     for _, info := range infos {
         if !info.IsDir() {
@@ -116,7 +117,7 @@ func fuzzymv(matchDir, renameDir string) error {
 
     // Remove exact filename matches
     for value, key := range renames.Values() {
-        base := gorom.MachName(value)
+        base := romio.MachName(value)
         if _, ok := matches.GetValue(base); ok {
             renames.Delete(key, value)
             matches.Delete(key, base)
@@ -130,7 +131,7 @@ func fuzzymv(matchDir, renameDir string) error {
     count := 1
     total := len(renames.Keys())
     for rkey, rfile := range renames.Keys() {
-        gorom.Progressf("Matching (%d/%d): '%s'", count, total, rfile)
+        util.Progressf("Matching (%d/%d): '%s'", count, total, rfile)
 
         for mkey := range matches.Keys() {
             setRatio  := fuzzy.TokenSetRatio(rkey, mkey)
@@ -145,7 +146,7 @@ func fuzzymv(matchDir, renameDir string) error {
         count++
     }
 
-    gorom.Progressf("")
+    util.Progressf("")
     term.Println(term.Magenta("Matches found: %d/%d", len(bestRenames), len(renames.Keys())))
 
     // Display renames we didn't match anything to

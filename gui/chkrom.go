@@ -17,9 +17,13 @@ package main
 
 import (
     "runtime"
-    "gorom"
-    "gorom/checksum"
     "os"
+
+    "gorom/dat"
+    "gorom/util"
+    "gorom/checksum"
+    "gorom/romdb"
+    "gorom/romio"
 )
 
 type ChkromStats struct {
@@ -32,7 +36,7 @@ type ChkromStats struct {
 }
 
 type ValidResults struct {
-    machine *gorom.Machine
+    machine *dat.Machine
     badNames map[string]string
     extras []string
     ok bool
@@ -57,7 +61,7 @@ var (
     chkMachRomStats ChkromStats
 )
 
-func validateChecksums(machine *gorom.Machine, rdb *gorom.RomDB, ch chan ValidResults) {
+func validateChecksums(machine *dat.Machine, rdb *romdb.RomDB, ch chan ValidResults) {
     if isStop() {
         ch <- ValidResults{ machine: machine, ok: false, err: stopError}
         return
@@ -66,7 +70,7 @@ func validateChecksums(machine *gorom.Machine, rdb *gorom.RomDB, ch chan ValidRe
     badNames := map[string]string{}
     extras := []string{}
 
-    ok, err := gorom.ValidateChecksums(machine, rdb, badNames, &extras, func(name string, sum checksum.Sha1) error {
+    ok, err := dat.ValidateChecksums(machine, rdb, badNames, &extras, func(name string, sum checksum.Sha1) error {
         if isStop() {
             return stopError
         }
@@ -89,9 +93,9 @@ func chkromResults(count *int, machMap map[string]int, ch chan ValidResults) {
 
     if err == stopError {
         chkRomStats.Total += len(machine.Roms)
-        machStatus = MachUnknown        
+        machStatus = MachUnknown
         for _, rom := range machine.Roms {
-            rom.Status = gorom.RomUnknown
+            rom.Status = dat.RomUnknown
         }
     } else if err != nil {
         chkRomStats.Total += len(machine.Roms)
@@ -99,17 +103,17 @@ func chkromResults(count *int, machMap map[string]int, ch chan ValidResults) {
         chkMachStats.Corrupt++
         machStatus = MachCorrupt
         for _, rom := range machine.Roms {
-            rom.Status = gorom.RomCorrupt
+            rom.Status = dat.RomCorrupt
         }
     } else if ok {
         machStatus = MachOk
         for _, rom := range machine.Roms {
             switch rom.Status {
-            case gorom.RomCorrupt:
+            case dat.RomCorrupt:
                 machStatus |= MachRomCorrupt
-            case gorom.RomBadName:
+            case dat.RomBadName:
                 machStatus |= MachRomBadName
-            case gorom.RomMissing:
+            case dat.RomMissing:
                 machStatus |= MachRomMissing
             }
         }
@@ -137,13 +141,13 @@ func chkromResults(count *int, machMap map[string]int, ch chan ValidResults) {
             chkRomStats.Total++
 
             switch rom.Status {
-            case gorom.RomOk:
+            case dat.RomOk:
                 chkRomStats.Ok++
-            case gorom.RomCorrupt:
+            case dat.RomCorrupt:
                 chkRomStats.Corrupt++
-            case gorom.RomBadName:
+            case dat.RomBadName:
                 chkRomStats.BadName++
-            case gorom.RomMissing:
+            case dat.RomMissing:
                 chkRomStats.Missing++
             }
         }
@@ -155,7 +159,7 @@ func chkromResults(count *int, machMap map[string]int, ch chan ValidResults) {
         chkMachStats.Missing++
         machStatus = MachMissing
         for _, rom := range machine.Roms {
-            rom.Status = gorom.RomMissing
+            rom.Status = dat.RomMissing
         }
     }
 
@@ -177,7 +181,7 @@ func chkromStart(dir string) error {
     chkMachStats = ChkromStats{}
     chkMachRomStats = ChkromStats{}
 
-    var rdb *gorom.RomDB
+    var rdb *romdb.RomDB
     var err error
 
     wd, _ := os.Getwd()
@@ -186,8 +190,8 @@ func chkromStart(dir string) error {
         return err
     }
     defer os.Chdir(wd)
-    
-    rdb, err = gorom.OpenRomDB(".")
+
+    rdb, err = romdb.OpenRomDB(".")
     if err != nil {
         return err
     }
@@ -218,12 +222,12 @@ func chkromStart(dir string) error {
         chkromResults(&resultCount, machMap, ch)
     }
 
-    err = gorom.ScanDir(".", true, func(file os.FileInfo) error {
+    err = util.ScanDir(".", true, func(file os.FileInfo) error {
         if isStop() {
             return stopError
         }
         path := file.Name()
-        name := gorom.MachName(path)
+        name := romio.MachName(path)
         _, ok := machMap[name]
         if !ok {
             call("log", name + " : EXTRA")

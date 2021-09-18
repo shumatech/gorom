@@ -13,19 +13,22 @@
 //
 //  You should have received a copy of the GNU General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-package gorom
+package dat
 
 import (
     "bufio"
     "encoding/xml"
     "fmt"
-    "gorom/checksum"
     "io"
     "os"
     "path"
     "strings"
 
     "compress/gzip"
+
+    "gorom/romdb"
+    "gorom/romio"
+    "gorom/checksum"
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -49,7 +52,7 @@ type Machine struct {
     IsDir           bool
 }
 
-type Rom struct {   
+type Rom struct {
     Name            string         `xml:"name,attr"`
     Size            int64          `xml:"size,attr"`
     Crc             checksum.Crc32 `xml:"crc,attr"`
@@ -133,17 +136,18 @@ func (cm *ChecksumMap) ForEach(callback func(name string, sum checksum.Sha1)) {
 // successfully and false if not.
 ///////////////////////////////////////////////////////////////////////////////
 
-func ValidateChecksums(machine *Machine, rdb *RomDB, badNames map[string]string, extras *[]string, checksumFunc ChecksumFunc) (bool, error) {
+func ValidateChecksums(machine *Machine, rdb *romdb.RomDB, badNames map[string]string,
+                       extras *[]string, checksumFunc romdb.ChecksumFunc) (bool, error) {
     romMap := NewChecksumMap();
     machName := machine.Name
 
-    rr, err := OpenRomReaderByName(machName)
+    rr, err := romio.OpenRomReaderByName(machName)
     if rr == nil || err != nil {
         return false, err
     }
     defer rr.Close()
 
-    machine.IsDir = IsDirReader(rr)
+    machine.IsDir = romio.IsDirReader(rr)
     machine.Path = rr.Path()
 
     err = rdb.Checksum(rr, func(name string, checksum checksum.Sha1) error {
@@ -215,13 +219,13 @@ func ValidateSizes(machine *Machine, extras *[]string, sizeFunc SizeFunc) (bool,
 
     machName := machine.Name
 
-    rr, err := OpenRomReaderByName(machName)
+    rr, err := romio.OpenRomReaderByName(machName)
     if rr == nil || err != nil {
         return false, err
     }
     defer rr.Close()
 
-    machine.IsDir = IsDirReader(rr)
+    machine.IsDir = romio.IsDirReader(rr)
     machine.Path = rr.Path()
 
     for _, file := range rr.Files() {
@@ -295,7 +299,7 @@ func ParseDatFile(datFile string, machFilter []string, headerFunc HeaderFunc, ma
 
     machMap := make(map[string]bool)
     for _, arg := range machFilter {
-        machName := MachName(arg)
+        machName := romio.MachName(arg)
         machMap[machName] = true
     }
 

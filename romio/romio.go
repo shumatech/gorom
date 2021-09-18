@@ -13,7 +13,7 @@
 //
 //  You should have received a copy of the GNU General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-package gorom
+package romio
 
 import (
     "fmt"
@@ -23,13 +23,42 @@ import (
     "io/ioutil"
     "path"
     "strings"
-    "gorom/torzip"
     "github.com/klauspost/compress/zip"
+
+    "gorom/util"
+    "gorom/torzip"
+    "gorom/archive"
+    "gorom/checksum"
 )
 
 const (
     bufferSize = 256*1024
 )
+
+///////////////////////////////////////////////////////////////////////////////
+// Utility Functions
+///////////////////////////////////////////////////////////////////////////////
+
+func IsArchiveExt(machPath string) bool {
+    machExt := strings.ToLower(path.Ext(machPath))
+    if machExt == ".zip" {
+        return true
+    }
+    for _, ext := range ArchiveReaderExts() {
+        if ext == machExt {
+            return true
+        }
+    }
+    return false;
+}
+
+func MachName(machPath string) string {
+    filename := path.Base(machPath)
+    if IsArchiveExt(machPath) {
+        filename = strings.TrimSuffix(filename, path.Ext(filename))
+    }
+    return filename
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // ROM Reader
@@ -57,20 +86,22 @@ type RomReader interface {
 }
 
 func OpenRomReader(machPath string) (RomReader, error) {
-    var rr RomReader
-
     info, err := os.Stat(machPath)
     if err != nil {
         return nil, err
     }
 
     if info.IsDir() {
-        rr, err = OpenDirReader(machPath)
-        return rr, err
-    } else {
-        if strings.ToLower(path.Ext(machPath)) == ".zip" && info.Mode().IsRegular() {
-            rr, err = OpenZipReader(machPath)
-            return rr, err
+        return OpenDirReader(machPath)
+    } else if info.Mode().IsRegular() {
+        machExt := strings.ToLower(path.Ext(machPath))
+        if machExt == ".zip" {
+            return OpenZipReader(machPath)
+        }
+        for _, ext := range ArchiveReaderExts() {
+            if ext == machExt {
+                return OpenArchiveReader(machPath)
+            }
         }
     }
 
@@ -78,18 +109,23 @@ func OpenRomReader(machPath string) (RomReader, error) {
 }
 
 func OpenRomReaderByName(machName string) (RomReader, error) {
-    var rr RomReader
-
     info, err := os.Stat(machName)
     if err == nil && info.IsDir() {
-        rr, err = OpenDirReader(machName)
-        return rr, err
+        return OpenDirReader(machName)
     } else {
-        machName += ".zip"
-        info, err := os.Stat(machName)
+        fileName := machName + ".zip"
+        info, err = os.Stat(fileName)
         if err == nil && info.Mode().IsRegular() {
-            rr, err = OpenZipReader(machName)
-            return rr, err
+            machName = fileName
+            return OpenZipReader(machName)
+        }
+        for _, ext := range ArchiveReaderExts() {
+            fileName = machName + ext
+            info, err = os.Stat(fileName)
+            if err == nil && info.Mode().IsRegular() {
+                machName = fileName
+                return OpenArchiveReader(machName)
+            }
         }
     }
 
@@ -170,7 +206,7 @@ func OpenDirReader(machPath string) (*DirReader, error) {
 }
 
 func scanDir(base string, dir string, files *[]*RomFile) error {
-    return ScanDir(path.Join(base, dir), true, func(info os.FileInfo) error {
+    return util.ScanDir(path.Join(base, dir), true, func(info os.FileInfo) error {
         if info.IsDir() {
             dir := path.Join(dir, info.Name())
             err := scanDir(base, dir, files)
@@ -510,6 +546,110 @@ func (zw *ZipWriter) OpenRaw(fh *zip.FileHeader) (io.WriteCloser, error) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Archive Reader
+///////////////////////////////////////////////////////////////////////////////
+
+type ArchiveReader struct {
+    RomInfo
+    dir map[string]int
+    rc *archive.Reader
+    index int
+}
+
+func ArchiveReaderExts() []string {
+    return []string{".7z", ".rar", ".tgz", ".gz"}
+}
+
+func OpenArchiveReader(machPath string) (*ArchiveReader, error) {
+    var ar ArchiveReader
+    err := ar.init(machPath)
+    return &ar, err
+}
+
+func (ar *ArchiveReader) init(machPath string) error {
+    info, err := os.Stat(machPath)
+    if err != nil {
+        return err
+    }
+    rc, err := archive.OpenReader(machPath)
+    if err != nil {
+        return err
+    }
+
+    files := []*RomFile{}
+    dir := map[string]int{}
+    index := 0
+
+    for rc.Next() {
+        name := rc.Name()
+        dir[name] = index
+        file := RomFile{
+            Name: name,
+            Size: rc.Size(),
+            ModTime: info.ModTime(),
+        }
+        files = append(files, &file)
+        index++
+    }
+    if err = rc.Error(); err != nil {
+        rc.Close()
+        return err
+    }
+
+    ar.path = machPath
+    ar.name = MachName(machPath)
+    ar.files = files
+    ar.dir = dir
+    ar.rc = rc
+    ar.index = index
+
+    return nil
+}
+
+func (ar *ArchiveReader) Name() string {
+    return ar.name
+}
+
+func (ar *ArchiveReader) Path() string {
+    return ar.path
+}
+
+func (ar *ArchiveReader) Files() []*RomFile {
+    return ar.files
+}
+
+func (ar *ArchiveReader) Stat(name string) *RomFile {
+    return ar.RomInfo.Stat(name)
+}
+
+func (ar *ArchiveReader) Open(file *RomFile) (io.ReadCloser, error) {
+    index, ok := ar.dir[file.Name]
+    if !ok {
+        return nil, os.ErrNotExist
+    }
+
+    if ar.index > index {
+        ar.rc.Reset()
+        ar.index = -1
+    }
+
+    for ar.index < index {
+        ar.rc.Next()
+        if err := ar.rc.Error(); err != nil {
+            return nil, err
+        }
+        ar.index++
+    }
+
+    return nopReadCloser{ar.rc}, nil
+}
+
+func (ar *ArchiveReader) Close() error {
+    ar.rc.Close()
+    return nil
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Copy ROM Algorithm
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -556,4 +696,38 @@ func CopyRom(writer RomWriter, dstName string, reader RomReader, srcName string)
 
     _, err = io.CopyBuffer(wr, rc, writer.Buffer())
     return err
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Checksum ROM
+///////////////////////////////////////////////////////////////////////////////
+
+type ChecksumFunc func(name string, size int64, crc32 checksum.Crc32, sha1 checksum.Sha1) error
+
+func ChecksumMach(machPath string, checksumFunc ChecksumFunc) error {
+    rr, err := OpenRomReader(machPath)
+    if rr == nil || err != nil {
+        return err
+    }
+    defer rr.Close()
+
+    for _, file := range rr.Files() {
+        rc, err := rr.Open(file)
+        if err != nil {
+            return err
+        }
+        defer rc.Close()
+
+        crc32, sha1, err := checksum.ChecksumReader(rc)
+        if err != nil {
+            return err
+        }
+
+        err = checksumFunc(file.Name, file.Size, crc32, sha1)
+        if err != nil {
+            return err
+        }
+    }
+
+    return nil
 }

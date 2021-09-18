@@ -18,7 +18,6 @@ package main
 import (
     "encoding/hex"
     "fmt"
-    "gorom"
     "log"
     "os"
     "path/filepath"
@@ -26,6 +25,8 @@ import (
 
     "github.com/sciter-sdk/go-sciter"
     "github.com/sciter-sdk/go-sciter/window"
+
+    "gorom/dat"
 )
 
 var (
@@ -33,7 +34,7 @@ var (
     Build string
 
     root *sciter.Element
-    machines []*gorom.Machine
+    machines []*dat.Machine
 
     stopChan chan struct{}
     stopError = fmt.Errorf("Operation stopped")
@@ -86,21 +87,21 @@ func datLoad(args ...*sciter.Value) *sciter.Value {
     callback := args[1].Clone()
 
     go func() {
-        machines = []*gorom.Machine{}
+        machines = []*dat.Machine{}
 
-        dat := sciter.NewValue()
+        datObj := sciter.NewValue()
         array := sciter.NewValue()
-        err := gorom.ParseDatFile(datFile, nil,
-            func(header *gorom.Header) error {
+        err := dat.ParseDatFile(datFile, nil,
+            func(header *dat.Header) error {
                 obj := sciter.NewValue()
                 obj.Set("Name", header.Name)
                 obj.Set("Description", header.Description)
                 obj.Set("Version", header.Version)
                 obj.Set("Author", header.Author)
-                dat.Set("Header", obj)
+                datObj.Set("Header", obj)
                 return nil
             },
-            func(machine *gorom.Machine) error {
+            func(machine *dat.Machine) error {
                 machines = append(machines, machine)
                 obj := sciter.NewValue()
                 obj.Set("Name", machine.Name)
@@ -120,9 +121,9 @@ func datLoad(args ...*sciter.Value) *sciter.Value {
             return
         }
 
-        dat.Set("Machines", array)
+        datObj.Set("Machines", array)
 
-        invoke(callback, dat)
+        invoke(callback, datObj)
         callback.Release()
     }()
 
@@ -132,7 +133,7 @@ func datLoad(args ...*sciter.Value) *sciter.Value {
 func resetRoms(args ...*sciter.Value) *sciter.Value {
     for _, machine := range machines {
         for _, rom := range machine.Roms {
-            rom.Status = gorom.RomUnknown
+            rom.Status = dat.RomUnknown
         }
     }
     return sciter.NullValue()
@@ -151,10 +152,10 @@ func getRoms(args ...*sciter.Value) *sciter.Value {
         obj.Set("Sha1", hex.EncodeToString(rom.Sha1[:]))
         var str string
         switch rom.Status {
-            case gorom.RomOk: str = "OK"
-            case gorom.RomMissing: str = "MISSING"
-            case gorom.RomCorrupt: str = "CORRUPT"
-            case gorom.RomBadName: str = "BAD_NAME"
+            case dat.RomOk: str = "OK"
+            case dat.RomMissing: str = "MISSING"
+            case dat.RomCorrupt: str = "CORRUPT"
+            case dat.RomBadName: str = "BAD_NAME"
             case RomFixCopy: str = "COPIED"
             case RomFixNotFound: str = "NOT_FOUND"
             case RomFixRename: str = "RENAMED"
