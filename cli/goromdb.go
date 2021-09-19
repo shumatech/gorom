@@ -61,7 +61,7 @@ func dbDump(rdb *romdb.RomDB) error {
 }
 
 func goromdb() error {
-    rdb, err := romdb.OpenRomDB(".")
+    rdb, err := romdb.OpenRomDB(".", options.App.SkipHeader)
     if err != nil {
         return err;
     }

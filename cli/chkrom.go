@@ -398,7 +398,7 @@ func chkrom(datFile string, machines []string) (bool, error) {
     var rdb *romdb.RomDB
     var err error
     if !options.ChkRom.SizeOnly {
-        rdb, err = romdb.OpenRomDB(".")
+        rdb, err = romdb.OpenRomDB(".", options.App.SkipHeader)
         if err != nil {
             return false, err
         }

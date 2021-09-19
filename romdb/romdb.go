@@ -46,6 +46,7 @@ var (
 type RomDB struct {
     Dir string
     db  *bolt.DB
+    skipHeader bool
 }
 
 type RomDBInfo struct {
@@ -60,14 +61,14 @@ type RomDBEntry struct {
     Sum      checksum.Sha1
 }
 
-func OpenRomDB(dir string) (*RomDB, error) {
+func OpenRomDB(dir string, skipHeader bool) (*RomDB, error) {
     path := path.Join(dir, DbFile)
     db, err := bolt.Open(path, 0644, &bolt.Options{Timeout: 3 * time.Second})
     if err != nil {
         return nil, fmt.Errorf("%s: %s", path, err.Error())
     }
 
-    return &RomDB{ dir, db }, nil
+    return &RomDB{ dir, db, skipHeader }, nil
 }
 
 func (rdb *RomDB) Close() {
@@ -168,14 +169,22 @@ func (rdb *RomDB) deleteChecksum(sum checksum.Sha1) error {
     })
 }
 
-func checksumRom(rr romio.RomReader, rf *romio.RomFile) (checksum.Sha1, error) {
+func checksumRom(rr romio.RomReader, rf *romio.RomFile, skipHeader bool) (checksum.Sha1, error) {
     rc, err := rr.Open(rf)
     if err != nil {
         return checksum.Sha1{}, err
     }
     defer rc.Close()
 
-    return checksum.CreateSha1(rc)
+    options := romio.ChecksumNoCrc32
+    if skipHeader {
+        options = options | romio.ChecksumSkipHeader
+    }
+    checksums, err := romio.ChecksumRom(rc, options)
+    if err != nil {
+        return checksum.Sha1{}, err
+    }
+    return checksums.Sha1, nil
 }
 
 func (rdb *RomDB) Dump() {
@@ -195,7 +204,7 @@ func (rdb *RomDB) Dump() {
     })
 }
 
-func (rdb *RomDB) ChecksumZip(rr romio.RomReader, checksumFunc ChecksumFunc) error {
+func (rdb *RomDB) ChecksumArchive(rr romio.RomReader, checksumFunc ChecksumFunc) error {
     files := rr.Files()
     checksums := make([]checksum.Sha1, len(files))
     sumAll := false
@@ -253,7 +262,7 @@ func (rdb *RomDB) ChecksumZip(rr romio.RomReader, checksumFunc ChecksumFunc) err
 
     if sumAll {
         for i, file := range files {
-            checksums[i], err = checksumRom(rr, file)
+            checksums[i], err = checksumRom(rr, file, rdb.skipHeader)
             if err != nil {
                 return err
             }
@@ -332,7 +341,7 @@ func (rdb *RomDB) ChecksumDir(rr romio.RomReader, checksumFunc ChecksumFunc) err
     if sumAll {
         checksums := make([]checksum.Sha1, len(files))
         for i, file := range files {
-            checksums[i], err = checksumRom(rr, file)
+            checksums[i], err = checksumRom(rr, file, rdb.skipHeader)
             if err != nil {
                 return err
             }
@@ -347,7 +356,7 @@ func (rdb *RomDB) ChecksumDir(rr romio.RomReader, checksumFunc ChecksumFunc) err
     } else if len(addFiles) > 0 {
         checksums := make([]checksum.Sha1, len(addFiles))
         for i, file := range addFiles {
-            checksums[i], err = checksumRom(rr, file)
+            checksums[i], err = checksumRom(rr, file, rdb.skipHeader)
             if err != nil {
                 return err
             }
@@ -370,7 +379,7 @@ func (rdb *RomDB) Checksum(rr romio.RomReader, checksumFunc ChecksumFunc) error 
     if romio.IsDirReader(rr) {
         return rdb.ChecksumDir(rr, checksumFunc)
     } else {
-        return rdb.ChecksumZip(rr, checksumFunc)
+        return rdb.ChecksumArchive(rr, checksumFunc)
     }
 }
 

@@ -18,12 +18,13 @@ package romio
 import (
     "testing"
     "os"
+    "fmt"
 
     "gorom/test"
     "gorom/checksum"
 )
 
-func romReaderTest(t *testing.T, machName string, machine *test.Machine) {
+func romReaderTest(t *testing.T, machName string, machine *test.Machine, df *test.DatFile) {
     rr, err := OpenRomReaderByName(machName)
     if rr == nil {
         test.Fail(t, "machine not found: " + machName)
@@ -34,28 +35,25 @@ func romReaderTest(t *testing.T, machName string, machine *test.Machine) {
     defer rr.Close()
 
     if rr.Name() != machName {
-        test.Fail(t, "wrong name")
+        test.Fail(t, fmt.Sprintf("wrong name: %s != %s", rr.Name(), machName))
     }
-    path := machName
-    if !IsDirReader(rr) {
-        path += ".zip"
-    }
+    path := df.MachPath(machName)
     if rr.Path() != path {
-        test.Fail(t, "wrong path")
+        test.Fail(t, fmt.Sprintf("wrong path: %s != %s", rr.Path(), path))
     }
     if len(rr.Files()) != len(machine.Roms) {
-        test.Fail(t, "wrong number of files")
+        test.Fail(t, fmt.Sprintf("wrong number of files: %d != %d", len(rr.Files()), len(machine.Roms)))
     }
     for name, rom := range machine.Roms {
         file := rr.Stat(name)
         if file == nil {
-            test.Fail(t, "file not found")
+            test.Fail(t, fmt.Sprintf("file not found: %s", name))
         }
         if file.Name != name {
-            test.Fail(t, "name mismatch")
+            test.Fail(t, fmt.Sprintf("name mismatch: %s != %s", file.Name, name))
         }
         if file.Size != rom.Size {
-            test.Fail(t, "size mismatch")
+            test.Fail(t, fmt.Sprintf("size mismatch: %d != %d", file.Size, rom.Size))
         }
     }
 }
@@ -63,7 +61,7 @@ func romReaderTest(t *testing.T, machName string, machine *test.Machine) {
 func runRomReaderTest(t *testing.T, df *test.DatFile) {
     defer test.Chdir(t, df.DataPath)()
     for machName, machine := range df.Machines {
-        romReaderTest(t, machName, &machine)
+        romReaderTest(t, machName, &machine, df)
     }
 }
 
@@ -75,8 +73,12 @@ func TestRomReaderDir(t *testing.T) {
     test.ForEachDat(t, test.DirDats, runRomReaderTest)
 }
 
-func romWriterTest(t *testing.T, machName string, isDir bool, machine *test.Machine) {
-    rw, err := CreateRomWriterTemp(".", isDir)
+func TestRomReaderArchive(t *testing.T) {
+    test.ForEachDat(t, test.ArchiveDats, runRomReaderTest)
+}
+
+func romWriterTest(t *testing.T, machName string, machine *test.Machine, df *test.DatFile) {
+    rw, err := CreateRomWriterTemp(".", df.IsDir())
     if err != nil {
         test.Fail(t, err)
     }
@@ -111,13 +113,13 @@ func romWriterTest(t *testing.T, machName string, isDir bool, machine *test.Mach
 
     rw.Close()
 
-    romReaderTest(t, rw.Name(), machine)
+    romReaderTest(t, rw.Name(), machine, df)
 }
 
 func runRomWriterTest(t *testing.T, df *test.DatFile) {
     defer test.Chdir(t, df.DataPath)()
     for machName, machine := range df.Machines {
-        romWriterTest(t, machName, df.IsDir, &machine)
+        romWriterTest(t, machName, &machine, df)
     }
 }
 
@@ -134,28 +136,28 @@ func runChecksumMachTest(t *testing.T, df *test.DatFile) {
 
     for machName, machine := range df.Machines {
         count := 0
-        err := ChecksumMach(df.MachPath(machName),
-                           func (actName string, actSize int64,
-                                 actCrc32 checksum.Crc32, actSha1 checksum.Sha1) error {
+        err := ChecksumMach(df.MachPath(machName), ChecksumSkipHeader,
+                           func (actName string,
+                                 actChecksums Checksums) error {
             rom, ok := machine.Roms[actName]
             if !ok {
                 test.Fail(t, "unexpected file")
             }
-            if rom.Size != actSize {
-                test.Fail(t, "size mismatch")
+            if rom.Size != actChecksums.Size {
+                test.Fail(t, fmt.Sprintf("size mismatch: %d != %d", rom.Size, actChecksums.Size))
             }
             expCrc32, ok := checksum.NewCrc32String(rom.Crc32)
             if !ok {
                 test.Fail(t, "invalid crc32")
             }
-            if expCrc32 != actCrc32 {
+            if expCrc32 != actChecksums.Crc32 {
                 test.Fail(t, "crc32 mismatch")
             }
             expSha1, ok := checksum.NewSha1String(rom.Sha1)
             if !ok {
                 test.Fail(t, "invalid sha1")
             }
-            if expSha1 != actSha1 {
+            if expSha1 != actChecksums.Sha1 {
                 test.Fail(t, "sha1 mismatch")
             }
             count++
@@ -165,7 +167,7 @@ func runChecksumMachTest(t *testing.T, df *test.DatFile) {
             test.Fail(t, err)
         }
         if count != len(machine.Roms) {
-            test.Fail(t, "file count mismatch")
+            test.Fail(t, fmt.Sprintf("file count mismatch: %d != %d", count, len(machine.Roms)))
         }
     }
 }
@@ -176,4 +178,12 @@ func TestChecksumMachZip(t *testing.T) {
 
 func TestChecksumMachDir(t *testing.T) {
     test.ForEachDat(t, test.DirDats, runChecksumMachTest)
+}
+
+func TestChecksumMachHeader(t *testing.T) {
+    test.ForEachDat(t, test.HeaderDats, runChecksumMachTest)
+}
+
+func TestChecksumMachArchive(t *testing.T) {
+    test.ForEachDat(t, test.ArchiveDats, runChecksumMachTest)
 }

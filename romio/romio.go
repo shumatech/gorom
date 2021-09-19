@@ -16,19 +16,23 @@
 package romio
 
 import (
-    "fmt"
-    "os"
-    "io"
-    "time"
-    "io/ioutil"
-    "path"
-    "strings"
-    "github.com/klauspost/compress/zip"
+	"bytes"
+	"crypto/sha1"
+	"fmt"
+	"hash/crc32"
+	"io"
+	"io/ioutil"
+	"os"
+	"path"
+	"strings"
+	"time"
 
-    "gorom/util"
-    "gorom/torzip"
-    "gorom/archive"
-    "gorom/checksum"
+	"github.com/klauspost/compress/zip"
+
+	"gorom/archive"
+	"gorom/checksum"
+	"gorom/torzip"
+	"gorom/util"
 )
 
 const (
@@ -702,9 +706,96 @@ func CopyRom(writer RomWriter, dstName string, reader RomReader, srcName string)
 // Checksum ROM
 ///////////////////////////////////////////////////////////////////////////////
 
-type ChecksumFunc func(name string, size int64, crc32 checksum.Crc32, sha1 checksum.Sha1) error
+type Checksums struct {
+    Crc32 checksum.Crc32
+    Sha1 checksum.Sha1
+    Size int64
+}
 
-func ChecksumMach(machPath string, checksumFunc ChecksumFunc) error {
+const (
+    ChecksumSkipHeader = 1 << iota
+    ChecksumNoCrc32
+    ChecksumNoSha1
+)
+
+type ChecksumFunc func(name string, checksums Checksums) error
+
+type RomHeader struct {
+    offset int
+    magic []byte
+    size int
+}
+
+var (
+    romHeaders = []RomHeader{
+        // NES
+        { 0x0, []byte{ 0x4E, 0x45, 0x53, 0x1A }, 0x10 },
+        // Atari 7800
+        { 0x1, []byte{ 0x41, 0x54, 0x41, 0x52, 0x49, 0x37, 0x38, 0x30, 0x30 }, 0x80 },
+        // Atari Lynx
+        { 0x0, []byte{ 0x4C, 0x59, 0x4E, 0x58 }, 0x40 },
+    }
+)
+
+func headerSize(buffer []byte) int {
+    for _, header := range romHeaders {
+        start := header.offset
+        end := start + len(header.magic)
+        if bytes.Equal(buffer[start:end], header.magic) {
+            return header.size
+        }
+    }
+    return 0
+}
+
+func ChecksumRom(rd io.Reader, options int) (Checksums, error) {
+    checksums := Checksums{Size:0}
+    sha1Hash := sha1.New()
+    crc32Hash := crc32.NewIEEE()
+    buffer := make([]byte, 256 * 1024)
+
+    if options & ChecksumSkipHeader != 0 {
+        const HeaderSize = 128
+        size, err := io.ReadAtLeast(rd, buffer, HeaderSize)
+        if err != nil {
+            return checksums, err
+        }
+        offset := headerSize(buffer)
+        if options & ChecksumNoSha1 == 0 {
+            sha1Hash.Write(buffer[offset:size])
+        }
+        if options & ChecksumNoCrc32 == 0 {
+            crc32Hash.Write(buffer[offset:size])
+        }
+        checksums.Size = int64(size - offset)
+    }
+
+    for {
+        size, err := rd.Read(buffer)
+        if (size > 0) {
+            if options & ChecksumNoSha1 == 0 {
+                sha1Hash.Write(buffer[:size])
+            }
+            if options & ChecksumNoCrc32 == 0 {
+                crc32Hash.Write(buffer[:size])
+            }
+            checksums.Size += int64(size)
+        }
+        if err != nil {
+            if err == io.EOF {
+                break
+            }
+            return checksums, nil
+        }
+    }
+
+    copy(checksums.Sha1[:], sha1Hash.Sum(nil))
+    copy(checksums.Crc32[:], crc32Hash.Sum(nil))
+
+    return checksums, nil
+}
+
+func ChecksumMach(machPath string, options int, checksumFunc ChecksumFunc) error {
     rr, err := OpenRomReader(machPath)
     if rr == nil || err != nil {
         return err
@@ -718,12 +809,12 @@ func ChecksumMach(machPath string, checksumFunc ChecksumFunc) error {
         }
         defer rc.Close()
 
-        crc32, sha1, err := checksum.ChecksumReader(rc)
+        checksums, err := ChecksumRom(rc, options)
         if err != nil {
             return err
         }
 
-        err = checksumFunc(file.Name, file.Size, crc32, sha1)
+        err = checksumFunc(file.Name, checksums)
         if err != nil {
             return err
         }

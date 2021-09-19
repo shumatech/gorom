@@ -22,7 +22,6 @@ import (
 
     "gorom/dat"
     "gorom/util"
-    "gorom/checksum"
     "gorom/romio"
     "gorom/term"
 )
@@ -73,13 +72,18 @@ func dir2dat(machFilter []string) error {
         }
 
         valid := false;
-        romio.ChecksumMach(name, func(name string, size int64,
-                                     crc32 checksum.Crc32, sha1 checksum.Sha1) error {
+        flags := 0
+        if options.App.SkipHeader {
+            flags = romio.ChecksumSkipHeader;
+        }
+        romio.ChecksumMach(name, flags,
+                           func(name string,
+                                checksums romio.Checksums) error {
             if !valid {
                 term.Printf(machineStart, machName, machName)
                 valid = true
             }
-            term.Printf(romTag, dat.ToDatPath(name), size, crc32, sha1)
+            term.Printf(romTag, dat.ToDatPath(name), checksums.Size, checksums.Crc32, checksums.Sha1)
             return nil
         })
         if valid {

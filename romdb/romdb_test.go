@@ -26,7 +26,7 @@ func runDatabaseTest(t *testing.T, df *test.DatFile) {
     defer test.Chdir(t, df.DataPath)()
 
     defer os.Remove(".gorom.db")
-    rdb, err := OpenRomDB("")
+    rdb, err := OpenRomDB("", true)
     if err != nil {
         test.Fail(t, err)
     }
@@ -63,4 +63,12 @@ func TestDatabaseZip(t *testing.T) {
 
 func TestDatabaseDir(t *testing.T) {
     test.ForEachDat(t, test.DirDats, runDatabaseTest)
+}
+
+func TestDatabaseHeader(t *testing.T) {
+    test.ForEachDat(t, test.HeaderDats, runDatabaseTest)
+}
+
+func TestDatabaseArchive(t *testing.T) {
+    test.ForEachDat(t, test.ArchiveDats, runDatabaseTest)
 }

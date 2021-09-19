@@ -25,8 +25,6 @@ import (
     "strings"
 
     "gorom/term"
-
-    "github.com/klauspost/compress/zip"
 )
 
 var (
@@ -209,32 +207,6 @@ func ScanDir(dir string, skipDot bool, fileFunc FileInfoFunc) error {
         }
     }
 
-    return nil
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// ScanZip - Execute a callback for every file in the Zip. If the callback
-// returns an error then scanning stops and the error is propogated up.
-///////////////////////////////////////////////////////////////////////////////
-
-type ZipInfoFunc func(fh *zip.File) (bool, error)
-
-func ScanZip(path string, zipFunc ZipInfoFunc) error {
-    rc, err := zip.OpenReader(path)
-    if err != nil {
-        return err
-    }
-
-    defer rc.Close()
-
-    for _, fh := range rc.File {
-        ok, err := zipFunc(fh)
-        if err != nil {
-            return err
-        } else if !ok {
-            break
-        }
-    }
     return nil
 }
 

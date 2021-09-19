@@ -68,7 +68,7 @@ type DatFile struct {
     Author string
     Path string
     DataPath string
-    IsDir bool
+    MachExt string
     Machines MachineMap
     MachineSha1 map[string]string
     MachineCrc32 map[string]string
@@ -115,20 +115,30 @@ var (
     }
 
     ZipDats = []DatFile {
-        { "ziproms", "Zip_ROMs", "", "", "dats/zip.dat", "roms/zip", false, machineMap, machineZipSha1, machineZipCrc32},
+        { "ziproms", "Zip_ROMs", "", "", "dats/zip.dat", "roms/zip", ".zip", machineMap, machineZipSha1, machineZipCrc32},
     }
 
     DirDats = []DatFile {
-        { "dirroms", "Dir_ROMs", "", "", "dats/dir.dat", "roms/dir", true, machineMap, nil, nil },
+        { "dirroms", "Dir_ROMs", "", "", "dats/dir.dat", "roms/dir", "", machineMap, nil, nil },
+    }
+
+    HeaderDats = []DatFile {
+        { "ziproms", "Zip_ROMs", "", "", "dats/zip.dat", "roms/header", ".zip", machineMap, nil, nil },
+    }
+
+    ArchiveDats = []DatFile {
+        { "7zroms",  "7z_ROMs",  "", "", "dats/7z.dat",  "roms/7z",  ".7z",  machineMap, nil, nil},
+        { "rarroms", "Rar_ROMs", "", "", "dats/rar.dat", "roms/rar", ".rar", machineMap, nil, nil},
+        { "tgzroms", "Tgz_ROMs", "", "", "dats/tgz.dat", "roms/tgz", ".tgz", machineMap, nil, nil},
     }
 )
 
 func (df *DatFile)MachPath(machName string) string {
-    if df.IsDir {
-        return machName
-    } else {
-        return machName + ".zip"
-    }
+    return machName + df.MachExt
+}
+
+func (df *DatFile)IsDir() bool {
+    return df.MachExt == ""
 }
 
 func ForEachDat(t *testing.T, dats []DatFile, callback func(t *testing.T, dat *DatFile)) {

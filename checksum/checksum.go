@@ -79,15 +79,21 @@ func (crc32 *Crc32) UnmarshalXMLAttr(attr xml.Attr) error {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// CreateSha1 - create a SHA1 from a reader
+// Sha1File - Return the SHA1 checksum for a file
 ///////////////////////////////////////////////////////////////////////////////
 
-func CreateSha1(rd io.Reader) (Sha1, error) {
+func Sha1File(path string) (Sha1, error) {
     var sum Sha1
+
+    fh, err := os.Open(path)
+    if err != nil {
+        return Sha1{}, err
+    }
+    defer fh.Close()
 
     hash := sha1.New()
 
-    _, err := io.Copy(hash, rd)
+    _, err = io.Copy(hash, fh)
     if err != nil {
         return sum, err
     }
@@ -95,20 +101,6 @@ func CreateSha1(rd io.Reader) (Sha1, error) {
     copy(sum[:], hash.Sum(nil))
 
     return sum, nil
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Sha1File - Return the SHA1 checksum for a file
-///////////////////////////////////////////////////////////////////////////////
-
-func Sha1File(path string) (Sha1, error) {
-    fh, err := os.Open(path)
-    if err != nil {
-        return Sha1{}, err
-    }
-    defer fh.Close()
-
-    return CreateSha1(fh)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -133,34 +125,4 @@ func Crc32File(path string) (Crc32, error) {
     copy(sum[:], hash.Sum(nil))
 
     return sum, nil
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// ChecksumReader - Return both the CRC32 and SHA1 hash for the io.Reader
-///////////////////////////////////////////////////////////////////////////////
-func ChecksumReader(rd io.Reader) (Crc32, Sha1, error) {
-    buffer := make([]byte, 256 * 1024)
-    sha1Hash := sha1.New()
-    crc32Hash := crc32.NewIEEE()
-
-    var sha1 Sha1
-    var crc32 Crc32
-    for {
-        len, err := rd.Read(buffer)
-        if (len > 0) {
-            sha1Hash.Write(buffer[:len])
-            crc32Hash.Write(buffer[:len])
-        }
-        if err != nil {
-            if err == io.EOF {
-                break
-            }
-            return crc32, sha1, err
-        }
-    }
-
-    copy(sha1[:], sha1Hash.Sum(nil))
-    copy(crc32[:], crc32Hash.Sum(nil))
-
-    return crc32, sha1, nil
 }

@@ -146,7 +146,7 @@ func fixrom(datFile string, machines []string, dirs []string) (bool, error) {
     for _, dir := range dirs {
         term.Printf("Scanning directory %s\n", dir)
 
-        rdb, err := romdb.OpenRomDB(dir)
+        rdb, err := romdb.OpenRomDB(dir, options.App.SkipHeader)
         if err != nil {
             return false, err
         }
@@ -214,7 +214,7 @@ func fixrom(datFile string, machines []string, dirs []string) (bool, error) {
             }
         }
 
-        // Determine the the new machine is a dir or zip
+        // Determine if the new machine is a dir or zip
         machIsDir := (valid && machine.IsDir) || (!valid && options.FixRom.CreateDir)
 
         // Set the machine path if the machine is not valid

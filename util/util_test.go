@@ -18,40 +18,7 @@ package util
 import (
     "testing"
     "gorom/test"
-    "github.com/klauspost/compress/zip"
 )
-
-func scanZipTest(t *testing.T, machPath string, machine *test.Machine) {
-    count := 0
-    err := ScanZip(machPath, func (fh *zip.File) (bool, error) {
-        rom, ok := machine.Roms[fh.Name]
-        if !ok {
-            test.Fail(t, "unexpected file")
-        }
-        if int64(fh.UncompressedSize64) != rom.Size {
-            test.Fail(t, "size mismatch")
-        }
-        count++
-        return true, nil
-    })
-    if err != nil {
-        test.Fail(t, err)
-    }
-    if count != len(machine.Roms) {
-        test.Fail(t, "file count mismatch")
-    }
-}
-
-func runScanZipTest(t *testing.T, df *test.DatFile) {
-    defer test.Chdir(t, df.DataPath)()
-    for machName, machine := range df.Machines {
-        scanZipTest(t, df.MachPath(machName), &machine)
-    }
-}
-
-func TestScanZip(t *testing.T) {
-    test.ForEachDat(t, test.ZipDats, runScanZipTest)
-}
 
 func TestHumanizePow2(t *testing.T) {
     nums := []int64{ 0, 1023, 1024, 1025, 1024*1024, 1024*1024-1, 1024*1024*1024, 1024*1024*1024-1}

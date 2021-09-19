@@ -123,7 +123,7 @@ func (cm *ChecksumMap) ForEach(callback func(name string, sum checksum.Sha1)) {
 
 ///////////////////////////////////////////////////////////////////////////////
 // ValidateChecksums - Validate the presence, SHA1 checksum, and name for each
-// ROM in a machine. ROMs are contained in either a Zip file or a directory
+// ROM in a machine. ROMs are contained in either an archive file or a directory
 // that has the same name as the machine.  Validation results are set in the
 // Status field for each ROM.
 //

@@ -119,7 +119,7 @@ func createMachine(machName string, testMach *test.Machine) *Machine {
 }
 
 func validateChecksumTest(t *testing.T, df *test.DatFile) {
-    rdb, err := romdb.OpenRomDB(".")
+    rdb, err := romdb.OpenRomDB(".", false)
     if err != nil {
         test.Fail(t, err)
     }
@@ -157,7 +157,7 @@ func validateChecksumTest(t *testing.T, df *test.DatFile) {
                 test.Fail(t, "ROM not OK")
             }
         }
-        if machine.Path != df.MachPath(machName) || machine.IsDir != df.IsDir {
+        if machine.Path != df.MachPath(machName) || machine.IsDir != df.IsDir() {
             test.Fail(t, "machine attribute mismatch")
         }
         machIndex++
@@ -211,7 +211,7 @@ func validateSizeTest(t *testing.T, df *test.DatFile) {
                 test.Fail(t, "ROM not OK")
             }
         }
-        if machine.Path != df.MachPath(machName) || machine.IsDir != df.IsDir {
+        if machine.Path != df.MachPath(machName) || machine.IsDir != df.IsDir() {
             test.Fail(t, "machine attribute mismatch")
         }
         machIndex++

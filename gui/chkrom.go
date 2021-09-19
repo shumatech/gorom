@@ -191,7 +191,7 @@ func chkromStart(dir string) error {
     }
     defer os.Chdir(wd)
 
-    rdb, err = romdb.OpenRomDB(".")
+    rdb, err = romdb.OpenRomDB(".", false) // TODO: add an option to skip headers?
     if err != nil {
         return err
     }

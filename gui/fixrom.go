@@ -190,7 +190,7 @@ func fixromStart(dir string, srcDirs []string, defaultDir bool) error {
     for _, dir := range srcDirs {
         call("log", "Scanning " + dir)
 
-        rdb, err := romdb.OpenRomDB(dir)
+        rdb, err := romdb.OpenRomDB(dir, false) // TODO: add an option to skip headers?
         if err != nil {
             return err
         }

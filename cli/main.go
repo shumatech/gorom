@@ -57,6 +57,7 @@ type Options struct {
         NoOk        bool      `short:"o" long:"no-ok" description:"Do not display OK roms"`
         NoHeader    bool      `short:"H" long:"no-header" description:"Do not display header description"`
         NoExtra     bool      `short:"e" long:"no-extra" description:"Do not show extra files"`
+        SkipHeader  bool      `short:"k" long:"skip-header" description:"skip ROM headers in checksum calculations"`
         Verbose     bool      `short:"v" long:"verbose" description:"Show verbose output"`
     } `group:"Application Options"`
 
