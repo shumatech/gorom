@@ -16,15 +16,16 @@
 package main
 
 import (
-    "fmt"
-    "log"
-    "os"
-    "path/filepath"
+	"fmt"
+	"log"
+	"os"
+	"path/filepath"
 
-    "gorom/util"
-    "gorom/term"
+	"gorom/romio"
+	"gorom/term"
+	"gorom/util"
 
-    "github.com/jessevdk/go-flags"
+	"github.com/jessevdk/go-flags"
 )
 
 var (
@@ -70,7 +71,7 @@ type Options struct {
 
     FixRom struct {
         Sources     []string  `short:"s" long:"src" description:"ROM source directory"`
-        CreateDir   bool      `short:"D" long:"default-dir" description:"Create new machines as directories instead of zips"`
+        DefaultFmt  string    `short:"D" long:"default-fmt" description:"Default machine format: dir,zip,7z,or tgz"`
         SkipScan    bool      `short:"S" long:"skip-scan" description:"Skip ROM source directory scan"`
         ExtraTrash  bool      `short:"E" long:"extra-trash" description:"Move extra files to the trash"`
     } `group:"Fix ROM (-f, --fixrom) Options"`
@@ -255,13 +256,13 @@ const examples string = `Examples:
     gorom --chkrom "datfiles/MAME 0.220 ROMs (merged).xml" --json > result
     jq '.machines[]|select(.status=="errors")|.path' result | xargs -i mv {} errors/
 * Update an existing ROM set with an update set
-    gorom --fixrom "../MAME 0.221 ROMs (merged).xml" --src "../MAME - Update ROMs (v0.220 to v0.221)" 
+    gorom --fixrom "../MAME 0.221 ROMs (merged).xml" --src "../MAME - Update ROMs (v0.220 to v0.221)"
 * Create a split ROM set from a merged set
-    gorom --fixrom "../MAME 0.220 ROMs (split).xml" --src "datfiles/MAME 0.220 ROMs (merged)" 
+    gorom --fixrom "../MAME 0.220 ROMs (split).xml" --src "datfiles/MAME 0.220 ROMs (merged)"
 * Create a 1G1R ROM set
     gorom --fixrom "../Atari - 2600 1G1R.dat" --src "../Atari - 2600 Roms"
 * Update multimedia files
-    gorom --fixrom "pS_MAME_AllProject_20200531_(cm).dat" --src "../MAME - Update EXTRAs (v0.220 to v0.221)" 
+    gorom --fixrom "pS_MAME_AllProject_20200531_(cm).dat" --src "../MAME - Update EXTRAs (v0.220 to v0.221)"
 * Filter a DAT with only 1980's Pac-Man games
     gorom --fltdat "../datfiles/MAME 0.221 ROMs (merged).xml" --year '198[0-9]' --desc '(?i)pac[- ]man' > pacman.dat
 * Make snapshot file names exactly match rom file names
@@ -335,6 +336,16 @@ func main() {
     }
     if options.Operations.FixRom != "" {
         datFile := filepath.ToSlash(options.Operations.FixRom)
+
+        options.FixRom.DefaultFmt = "." + options.FixRom.DefaultFmt
+        if options.FixRom.DefaultFmt == "." {
+            options.FixRom.DefaultFmt = ".zip"
+        } else if options.FixRom.DefaultFmt == ".dir" {
+            options.FixRom.DefaultFmt = ""
+        } else if !romio.IsArchiveWriter(options.FixRom.DefaultFmt) {
+            usage("Invalid machine format")
+        }
+
         ok, err = fixrom(datFile, args[:], options.FixRom.Sources)
     }
     if options.Operations.ChkTor != "" {

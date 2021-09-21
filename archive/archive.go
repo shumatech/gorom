@@ -26,8 +26,9 @@ import (
 	"errors"
 	"io"
 	"unsafe"
-	"path/filepath"
+	"path"
 	"time"
+	"strings"
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -35,14 +36,14 @@ import (
 ///////////////////////////////////////////////////////////////////////////////
 
 type Reader struct {
-	path string
+	name string
 	archive *C.struct_archive
 	entry *C.struct_archive_entry
 	rc int
 }
 
-func OpenReader(path string) (*Reader, error) {
-	rd := &Reader{path:path}
+func OpenReader(name string) (*Reader, error) {
+	rd := &Reader{name:name}
 	if err := rd.init(); err != nil {
 		C.archive_read_free(rd.archive)
 		return nil, err;
@@ -57,7 +58,7 @@ func (rd *Reader) init() error {
     C.archive_read_support_filter_all(rd.archive);
     C.archive_read_support_format_all(rd.archive);
 
-	if C.archive_read_open_filename(rd.archive, C.CString(rd.path),
+	if C.archive_read_open_filename(rd.archive, C.CString(rd.name),
 	                                256 * 1024) != C.ARCHIVE_OK {
 		s := C.GoString(C.archive_error_string(rd.archive))
 		return errors.New(s)
@@ -92,7 +93,11 @@ func (rd *Reader) Error() error {
 }
 
 func (rd *Reader) Close() {
+	if rd.archive == nil {
+		return
+	}
 	C.archive_read_free(rd.archive)
+	rd.archive = nil
 }
 
 func (rd *Reader) Path() string {
@@ -103,7 +108,7 @@ func (rd *Reader) Path() string {
 }
 
 func (rd *Reader) Name() string {
-	return filepath.Base(rd.Path())
+	return path.Base(rd.Path())
 }
 
 func (rd *Reader) ModTime() time.Time {
@@ -143,10 +148,9 @@ type Writer struct {
 	header bool
 }
 
-func CreateWriter(path string) (*Writer, error) {
+func CreateWriter(name string) (*Writer, error) {
 	archive := C.archive_write_new()
-
-	ext := filepath.Ext(path)
+	ext := strings.ToLower(path.Ext(name))
 	switch ext {
 	case ".zip", ".7z":
 		C.archive_write_add_filter_none(archive)
@@ -171,7 +175,7 @@ func CreateWriter(path string) (*Writer, error) {
 		C.archive_write_set_format_pax_restricted(archive);
 	}
 
-	if C.archive_write_open_filename(archive, C.CString(path)) != C.ARCHIVE_OK {
+	if C.archive_write_open_filename(archive, C.CString(name)) != C.ARCHIVE_OK {
 		s := C.GoString(C.archive_error_string(archive))
 		C.archive_write_free(archive)
 		return nil, errors.New(s)
@@ -183,13 +187,17 @@ func CreateWriter(path string) (*Writer, error) {
 }
 
 func (wr *Writer) Close() {
+	if wr.archive == nil {
+		return
+	}
 	C.archive_entry_free(wr.entry)
 	C.archive_write_free(wr.archive)
+	wr.archive = nil
 }
 
-func (wr *Writer) New(path string, size int64) {
+func (wr *Writer) New(name string, size int64) {
 	C.archive_entry_clear(wr.entry)
-	C.archive_entry_set_pathname(wr.entry, C.CString(path))
+	C.archive_entry_set_pathname(wr.entry, C.CString(name))
 	C.archive_entry_set_size(wr.entry, C.int64_t(size))
 	C.archive_entry_set_filetype(wr.entry, C.AE_IFREG)
 	C.archive_entry_set_perm(wr.entry, 0644)
@@ -202,8 +210,8 @@ func (wr *Writer) Clone(rd *Reader) {
 	wr.header = true
 }
 
-func (wr *Writer) Path(path string) {
-	C.archive_entry_set_pathname(wr.entry, C.CString(path))
+func (wr *Writer) Path(name string) {
+	C.archive_entry_set_pathname(wr.entry, C.CString(name))
 }
 
 func (wr *Writer) Size(size int64) {

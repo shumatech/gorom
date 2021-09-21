@@ -65,10 +65,11 @@ type CopyResults struct {
     err error
 }
 
-func copyRoms(machPath string, isDir bool, roms []CopyRom, ch chan CopyResults) {
+func copyRoms(machPath string, roms []CopyRom, ch chan CopyResults) {
     results := CopyResults{ machPath: machPath }
 
-    writer, err := romio.CreateRomWriterTemp(".", isDir)
+    machExt := romio.MachExt(machPath)
+    writer, err := romio.CreateRomWriterTemp(".", machExt)
     if err != nil {
         results.errmsg = "create temp writer"
     } else {
@@ -214,15 +215,9 @@ func fixrom(datFile string, machines []string, dirs []string) (bool, error) {
             }
         }
 
-        // Determine if the new machine is a dir or zip
-        machIsDir := (valid && machine.IsDir) || (!valid && options.FixRom.CreateDir)
-
         // Set the machine path if the machine is not valid
         if !valid {
-            machine.Path = machine.Name
-            if !machIsDir {
-                machine.Path += ".zip"
-            }
+            machine.Path = machine.Name + options.FixRom.DefaultFmt
         }
 
         term.Printf("%s : %s\n", machine.Path, term.Cyan("FIXING"))
@@ -286,7 +281,7 @@ func fixrom(datFile string, machines []string, dirs []string) (bool, error) {
 
             FixromStats.Fixed++
             term.Printf("  %s\n", term.Green("OK"))
-            go copyRoms(machine.Path, machIsDir, roms, ch)
+            go copyRoms(machine.Path, roms, ch)
         } else {
             FixromStats.Failed++
             term.Printf("  %s\n", term.Red("FAILED"))

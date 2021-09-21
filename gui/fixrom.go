@@ -70,7 +70,7 @@ var (
     fixMachStats FixMachStats
     fixRomStats FixRomStats
 )
-func copyRoms(machPath string, isDir bool, roms []CopyRom, ch chan CopyResults) {
+func copyRoms(machPath string, roms []CopyRom, ch chan CopyResults) {
     results := CopyResults{ machPath: machPath }
 
     if isStop() {
@@ -79,7 +79,8 @@ func copyRoms(machPath string, isDir bool, roms []CopyRom, ch chan CopyResults) 
         return
     }
 
-    writer, err := romio.CreateRomWriterTemp(".", isDir)
+    machExt := romio.MachExt(machPath)
+    writer, err := romio.CreateRomWriterTemp(".", machExt)
     if err != nil {
         results.errmsg = "create temp writer"
     } else {
@@ -259,15 +260,10 @@ func fixromStart(dir string, srcDirs []string, defaultDir bool) error {
             }
         }
 
-        // Determine the the new machine is a dir or zip
-        machIsDir := (valid && machine.IsDir) || (!valid && defaultDir)
-
         // Set the machine path if the machine is not valid
         if !valid {
-            machine.Path = machine.Name
-            if !machIsDir {
-                machine.Path += ".zip"
-            }
+            // TODO: provide an option?
+            machine.Path = machine.Name + ".zip"
         }
 
         roms := []CopyRom{}
@@ -335,7 +331,7 @@ func fixromStart(dir string, srcDirs []string, defaultDir bool) error {
             opTotal++ // Add one for copy job
             opCount++
             call("status", float32(opCount) / float32(opTotal), i, "FIXED")
-            go copyRoms(machine.Path, machIsDir, roms, ch)
+            go copyRoms(machine.Path, roms, ch)
         } else {
             fixMachStats.Failed++
             opCount++

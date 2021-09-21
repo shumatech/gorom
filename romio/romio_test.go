@@ -25,6 +25,9 @@ import (
 )
 
 func romReaderTest(t *testing.T, machName string, machine *test.Machine, df *test.DatFile) {
+    if !IsRomReader(df.MachExt) {
+        return
+    }
     rr, err := OpenRomReaderByName(machName)
     if rr == nil {
         test.Fail(t, "machine not found: " + machName)
@@ -78,7 +81,10 @@ func TestRomReaderArchive(t *testing.T) {
 }
 
 func romWriterTest(t *testing.T, machName string, machine *test.Machine, df *test.DatFile) {
-    rw, err := CreateRomWriterTemp(".", df.IsDir())
+    if !IsRomWriter(df.MachExt) {
+        return
+    }
+    rw, err := CreateRomWriterTemp(".", df.MachExt)
     if err != nil {
         test.Fail(t, err)
     }
@@ -129,6 +135,10 @@ func TestRomWriterZip(t *testing.T) {
 
 func TestRomWriterDir(t *testing.T) {
     test.ForEachDat(t, test.DirDats, runRomWriterTest)
+}
+
+func TestRomWriterArchive(t *testing.T) {
+    test.ForEachDat(t, test.ArchiveDats, runRomWriterTest)
 }
 
 func runChecksumMachTest(t *testing.T, df *test.DatFile) {

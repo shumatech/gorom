@@ -36,8 +36,6 @@ const (
     eocd64Sig = 0x06064b50
     eocd64LocSize = 20
     eocd64LocSig = 0x07064b50
-
-    bufferSize = 256*1024
 )
 
 func torzipFile(path string) error {
@@ -96,7 +94,6 @@ func torzipFile(path string) error {
         }
     }
 
-    var buffer [bufferSize]byte
     for index := zw.First(); index >= 0; index = zw.Next() {
         file := zr.File[index]
 
@@ -116,7 +113,7 @@ func torzipFile(path string) error {
             return err
         }
 
-        _, err = io.CopyBuffer(wr, rd, buffer[:])
+        _, err = io.Copy(wr, rd)
         wr.Close()
         if err != nil {
             return err

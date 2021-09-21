@@ -151,7 +151,6 @@ func (tzw *Writer) Create(name string) error {
         return fmt.Errorf("create after write")
     }
 
-    name = strings.ReplaceAll(name, "\\", "/")
     tzf := &file{ name:name, tzw:tzw, index:len(tzw.files) }
     tzw.files = append(tzw.files, tzf)
 
@@ -196,7 +195,7 @@ func (tzf *file) Close() error {
     tzw := tzf.tzw
 
     if !tzf.raw && tzw.ucw.count != tzf.size {
-        return fmt.Errorf("file size mismatch")   
+        return fmt.Errorf("file size mismatch")
     }
 
     // Make sure all compressed data is pushed through
@@ -332,7 +331,7 @@ func IsTorZip(zip string) (bool, error) {
         return false, err
     }
 
-    // Get the size and offset of the central directory 
+    // Get the size and offset of the central directory
     size := int64(binary.LittleEndian.Uint32(b[12:]))
     ofs := int64(binary.LittleEndian.Uint32(b[16:]))
 

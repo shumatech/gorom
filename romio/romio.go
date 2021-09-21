@@ -35,33 +35,16 @@ import (
 	"gorom/util"
 )
 
-const (
-    bufferSize = 256*1024
-)
-
 ///////////////////////////////////////////////////////////////////////////////
 // Utility Functions
 ///////////////////////////////////////////////////////////////////////////////
 
-func IsArchiveExt(machPath string) bool {
-    machExt := strings.ToLower(path.Ext(machPath))
-    if machExt == ".zip" {
-        return true
-    }
-    for _, ext := range ArchiveReaderExts() {
-        if ext == machExt {
-            return true
-        }
-    }
-    return false;
+func MachExt(machPath string) string {
+    return strings.ToLower(path.Ext(machPath))
 }
 
 func MachName(machPath string) string {
-    filename := path.Base(machPath)
-    if IsArchiveExt(machPath) {
-        filename = strings.TrimSuffix(filename, path.Ext(filename))
-    }
-    return filename
+    return strings.ToLower(strings.TrimSuffix(path.Base(machPath), path.Ext(machPath)))
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -89,6 +72,11 @@ type RomReader interface {
     Close() error
 }
 
+func IsRomReader(machPath string) bool {
+    machExt := MachExt(machPath)
+    return machExt == "" || machExt == ".zip" || IsArchiveReader(machExt)
+}
+
 func OpenRomReader(machPath string) (RomReader, error) {
     info, err := os.Stat(machPath)
     if err != nil {
@@ -98,14 +86,11 @@ func OpenRomReader(machPath string) (RomReader, error) {
     if info.IsDir() {
         return OpenDirReader(machPath)
     } else if info.Mode().IsRegular() {
-        machExt := strings.ToLower(path.Ext(machPath))
+        machExt := MachExt(machPath)
         if machExt == ".zip" {
             return OpenZipReader(machPath)
-        }
-        for _, ext := range ArchiveReaderExts() {
-            if ext == machExt {
-                return OpenArchiveReader(machPath)
-            }
+        } else {
+            return OpenArchiveReader(machPath)
         }
     }
 
@@ -161,23 +146,53 @@ type RomWriter interface {
     Create(name string) error
     First() int
     Next() int
-    Open(size int64) (io.WriteCloser, error)
+    Open(size int64, modTime *time.Time) (io.WriteCloser, error)
     Close() error
-    Buffer() []byte
+}
+
+func IsRomWriter(machPath string) bool {
+    machExt := MachExt(machPath)
+    return machExt == "" || machExt == ".zip" || IsArchiveWriter(machExt)
 }
 
 func CreateRomWriter(machPath string) (RomWriter, error) {
     var err error
     var rw RomWriter
-    if strings.ToLower(path.Ext(machPath)) == ".zip" {
+    machExt := strings.ToLower(MachExt(machPath))
+    if machExt == "" {
+        rw, err =  CreateDirWriter(machPath)
+    } else if machExt == ".zip" {
         rw, err = CreateZipWriter(machPath)
     } else {
-        rw, err =  CreateDirWriter(machPath)
+        rw, err =  CreateArchiveWriter(machPath)
     }
     return rw, err
 }
 
-func CreateRomWriterTemp(dir string, isDir bool) (RomWriter, error) {
+func CreateRomWriterTemp(dir string, machExt string) (RomWriter, error) {
+    var err error
+    var tmpName string
+    if machExt == "" {
+        tmpName, err = ioutil.TempDir(dir, "gorom*")
+        if err != nil {
+            return nil, err
+        }
+        return CreateDirWriter(tmpName)
+    } else {
+        fh, err := ioutil.TempFile(dir, "gorom*" + machExt)
+        if err != nil {
+            return nil, err
+        }
+        defer fh.Close()
+        if machExt == ".zip" {
+            return CreateZipWriter(fh.Name())
+        } else {
+            return CreateArchiveWriter(fh.Name())
+        }
+    }
+}
+
+func CreateRomWriterTemp2(dir string, isDir bool) (RomWriter, error) {
     var err error
     var tmpName string
     if isDir {
@@ -280,7 +295,7 @@ type DirWriter struct {
     RomInfo
     names []string
     next int
-    buf []byte
+    modTime *time.Time
 }
 
 func CreateDirWriter(machPath string) (*DirWriter, error) {
@@ -297,7 +312,6 @@ func (dw *DirWriter) init(machPath string) error {
 
     dw.path = machPath
     dw.name = MachName(machPath)
-    dw.buf = make([]byte, bufferSize)
 
     return nil
 }
@@ -310,16 +324,12 @@ func (dw *DirWriter) Path() string {
     return dw.path
 }
 
-func (dw *DirWriter) Buffer() []byte {
-    return dw.buf
-}
-
 func (dw *DirWriter) Create(name string) error {
     dw.names = append(dw.names, name)
     return nil
 }
 
-func (dw *DirWriter) Open(size int64) (io.WriteCloser, error) {
+func (dw *DirWriter) Open(size int64, modTime *time.Time) (io.WriteCloser, error) {
     if dw.next == 0 {
         return nil, fmt.Errorf("no files created")
     }
@@ -334,12 +344,12 @@ func (dw *DirWriter) Open(size int64) (io.WriteCloser, error) {
         }
     }
 
-    wr, err := os.OpenFile(path.Join(dw.path, name), os.O_WRONLY | os.O_CREATE, 0644)
+    file, err := os.OpenFile(path.Join(dw.path, name), os.O_WRONLY | os.O_CREATE, 0644)
     if err != nil {
         return nil, err
     }
 
-    return wr, nil
+    return file, nil
 }
 
 func (dw *DirWriter) First() int {
@@ -471,7 +481,6 @@ type ZipWriter struct {
     RomInfo
     tzw *torzip.Writer
     fh *os.File
-    buf []byte
 }
 
 func CreateZipWriter(machPath string) (*ZipWriter, error) {
@@ -503,7 +512,6 @@ func (zw *ZipWriter) init(fh *os.File) error {
     zw.name = MachName(zw.path)
     zw.fh = fh
     zw.tzw = tzw
-    zw.buf = make([]byte, bufferSize)
 
     return nil
 }
@@ -516,15 +524,11 @@ func (zw *ZipWriter) Path() string {
     return zw.path
 }
 
-func (zw *ZipWriter) Buffer() []byte {
-    return zw.buf
-}
-
 func (zw *ZipWriter) Create(name string) error {
     return zw.tzw.Create(name)
 }
 
-func (zw *ZipWriter) Open(size int64) (io.WriteCloser, error) {
+func (zw *ZipWriter) Open(size int64, modTime *time.Time) (io.WriteCloser, error) {
     wr, err := zw.tzw.Open(size)
     if err != nil {
         return nil, err
@@ -564,17 +568,26 @@ func ArchiveReaderExts() []string {
     return []string{".7z", ".rar", ".tgz", ".gz"}
 }
 
+func IsArchiveReader(machPath string) bool {
+    machExt := MachExt(machPath)
+    for _, ext := range ArchiveReaderExts() {
+        if ext == machExt {
+            return true
+        }
+    }
+    return false
+}
+
 func OpenArchiveReader(machPath string) (*ArchiveReader, error) {
+    if !IsArchiveReader(machPath) {
+        return nil, fmt.Errorf("invalid archive format")
+    }
     var ar ArchiveReader
     err := ar.init(machPath)
     return &ar, err
 }
 
 func (ar *ArchiveReader) init(machPath string) error {
-    info, err := os.Stat(machPath)
-    if err != nil {
-        return err
-    }
     rc, err := archive.OpenReader(machPath)
     if err != nil {
         return err
@@ -590,7 +603,7 @@ func (ar *ArchiveReader) init(machPath string) error {
         file := RomFile{
             Name: name,
             Size: rc.Size(),
-            ModTime: info.ModTime(),
+            ModTime: rc.ModTime(),
         }
         files = append(files, &file)
         index++
@@ -654,6 +667,111 @@ func (ar *ArchiveReader) Close() error {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Archive Writer
+///////////////////////////////////////////////////////////////////////////////
+
+type nopWriteCloser struct {
+    io.Writer
+}
+
+func (w nopWriteCloser) Close() error {
+    return nil
+}
+
+type ArchiveWriter struct {
+    RomInfo
+    wc *archive.Writer
+    names []string
+    next int
+}
+
+func ArchiveWriterExts() []string {
+    return []string{".7z", ".tgz", ".gz"}
+}
+
+func IsArchiveWriter(machPath string) bool {
+    machExt := MachExt(machPath)
+    for _, ext := range ArchiveWriterExts() {
+        if ext == machExt {
+            return true
+        }
+    }
+    return false
+}
+
+func CreateArchiveWriter(machPath string) (*ArchiveWriter, error) {
+    if !IsArchiveWriter(machPath) {
+        return nil, fmt.Errorf("invalid archive format")
+    }
+    var aw ArchiveWriter
+    err := aw.init(machPath)
+    return &aw, err
+}
+
+func (aw *ArchiveWriter) init(machPath string) error {
+    wc, err := archive.CreateWriter(machPath)
+    if err != nil {
+        return err
+    }
+
+    aw.path = machPath
+    aw.name = MachName(machPath)
+    aw.wc = wc
+
+    return nil
+}
+
+func (aw *ArchiveWriter) Name() string {
+    return aw.name
+}
+
+func (aw *ArchiveWriter) Path() string {
+    return aw.path
+}
+
+func (aw *ArchiveWriter) Create(name string) error {
+    aw.names = append(aw.names, name)
+    return nil
+}
+
+func (aw *ArchiveWriter) Open(size int64, modTime *time.Time) (io.WriteCloser, error) {
+    if aw.next == 0 {
+        return nil, fmt.Errorf("no files created")
+    }
+
+    name := aw.names[aw.next - 1]
+
+    aw.wc.New(name, size)
+    if modTime != nil {
+        aw.wc.ModTime(*modTime)
+    }
+
+    return nopWriteCloser{aw.wc}, nil
+}
+
+func (aw *ArchiveWriter) First() int {
+    if aw.next != 0 || len(aw.names) == 0 {
+        return -1
+    }
+    aw.next++
+    return 0
+}
+
+func (aw *ArchiveWriter) Next() int {
+    if aw.next == 0 || aw.next == len(aw.names) {
+        return -1
+    }
+    index := aw.next
+    aw.next++
+    return index
+}
+
+func (aw *ArchiveWriter) Close() error {
+    aw.wc.Close()
+    return nil
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Copy ROM Algorithm
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -681,7 +799,7 @@ func CopyRom(writer RomWriter, dstName string, reader RomReader, srcName string)
             }
             defer wr.Close()
 
-            _, err = io.CopyBuffer(wr, rc, writer.Buffer())
+            _, err = io.Copy(wr, rc)
             return err
         }
     }
@@ -692,13 +810,19 @@ func CopyRom(writer RomWriter, dstName string, reader RomReader, srcName string)
     }
     defer rc.Close()
 
-    wr, err := writer.Open(srcFile.Size)
+    var modTime *time.Time
+    info := reader.Stat(srcName)
+    if info != nil {
+        modTime = &info.ModTime
+    }
+
+    wc, err := writer.Open(srcFile.Size, modTime)
     if err != nil {
         return err
     }
-    defer wr.Close()
+    defer wc.Close()
 
-    _, err = io.CopyBuffer(wr, rc, writer.Buffer())
+    _, err = io.Copy(wc, rc)
     return err
 }
 
