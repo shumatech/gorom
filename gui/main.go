@@ -16,18 +16,23 @@
 package main
 
 import (
-    "encoding/hex"
-    "fmt"
-    "log"
-    "os"
-    "path/filepath"
-    "runtime"
+	"encoding/hex"
+	"fmt"
+	"log"
+	"os"
+	"path/filepath"
+	"runtime"
 
-    "github.com/sciter-sdk/go-sciter"
-    "github.com/sciter-sdk/go-sciter/window"
+	"github.com/sciter-sdk/go-sciter"
+	"github.com/sciter-sdk/go-sciter/window"
 
-    "gorom/dat"
+	"gorom/dat"
 )
+
+type Options struct {
+    format string
+    headers bool
+}
 
 var (
     Version string
@@ -38,6 +43,8 @@ var (
 
     stopChan chan struct{}
     stopError = fmt.Errorf("Operation stopped")
+
+    options Options
 )
 
 func isStop() bool {
@@ -174,7 +181,7 @@ func chkrom(args ...*sciter.Value) *sciter.Value {
     stopChan = make(chan struct{})
 
     go func() {
-        err := chkromStart(dir)
+        err := chkromStart(dir, options)
         if err != nil {
             call("errorMessage", err.Error())
             invoke(callback, nil)
@@ -221,7 +228,7 @@ func fixrom(args ...*sciter.Value) *sciter.Value {
 
     stopChan = make(chan struct{})
     go func() {
-        err := fixromStart(dir, srcDirs, false)
+        err := fixromStart(dir, srcDirs, options)
         if err != nil {
             call("errorMessage", err.Error())
             invoke(callback, nil)
@@ -260,6 +267,12 @@ func about(args ...*sciter.Value) *sciter.Value {
     return obj
 }
 
+func setOptions(args ...*sciter.Value) *sciter.Value {
+    options.headers = args[0].Get("headers").Bool()
+    options.format = args[0].Get("format").String()
+    return sciter.NullValue()
+}
+
 func setEventHandler(w *window.Window) {
     w.DefineFunction("datLoad", datLoad)
     w.DefineFunction("getRoms", getRoms)
@@ -268,6 +281,7 @@ func setEventHandler(w *window.Window) {
     w.DefineFunction("stop", stop)
     w.DefineFunction("fixrom", fixrom)
     w.DefineFunction("about", about)
+    w.DefineFunction("setOptions", setOptions)
 }
 
 func init() {

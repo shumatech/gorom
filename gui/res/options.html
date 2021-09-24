@@ -1,0 +1,54 @@
+<html>
+<head>
+  <title>GoROM Options</title>
+  <style>
+    @import "theme.css";
+    html
+    {
+      font:system;
+      width:max-content;
+      height:max-content;
+      overflow:hidden;
+      color: color(text-normal);
+      background: color(background);
+      font-family: sans-serif;
+    }
+    select
+    {
+      background: color(accent);
+      width: *;
+    }
+    option
+    {
+      color: color(text-light);
+    }
+    button
+    {
+      width: 5em;
+    }
+    form { border-spacing: 0.5em; margin:0.5em; }
+    form > label { font:system; line-height:1.5em; display:block; min-width: max-content; }
+  </style>
+  <script type="text/tiscript">
+    event click $(#ok-dialog) { view.close($(form).value); }
+    event click $(#cancel-dialog) { view.close(); }
+    $(form).value = view.parameters;
+    </script>
+</head>
+<body>
+<form>
+  <button|checkbox(headers) accesskey="^1">Ignore ROM headers</button>
+  <label>Default ROM format:</label>
+  <select|list(format) accesskey="^2">
+    <option value=".zip">Zip</option>
+    <option value="">directory</option>
+    <option value=".7z">7zip</option>
+    <option value=".tgz">tar-gzip</option>
+  </select>
+</form>
+<p style="text-align:center">
+<button id="cancel-dialog" role="button">Cancel</button>
+<button id="ok-dialog" role="default-button">OK</button>
+</p>
+</body>
+</html>

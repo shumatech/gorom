@@ -176,7 +176,7 @@ func chkromResults(count *int, machMap map[string]int, ch chan ValidResults) {
     }
 }
 
-func chkromStart(dir string) error {
+func chkromStart(dir string, options Options) error {
     chkRomStats = ChkromStats{}
     chkMachStats = ChkromStats{}
     chkMachRomStats = ChkromStats{}
@@ -191,7 +191,7 @@ func chkromStart(dir string) error {
     }
     defer os.Chdir(wd)
 
-    rdb, err = romdb.OpenRomDB(".", false) // TODO: add an option to skip headers?
+    rdb, err = romdb.OpenRomDB(".", options.headers)
     if err != nil {
         return err
     }

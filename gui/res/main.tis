@@ -33,6 +33,11 @@ var RomData = new GridData([
       { name:"Status",       width:100, fill:false },
     ]);
 
+var DefaultOptions = {
+  headers: false,
+  format:  "zip"
+};
+
 function errorMessage(message) {
   log("ERROR: " + message);
   view.dialog {
@@ -52,7 +57,7 @@ event click $(#logo)
     height: 250,
     parameters: view.about(),
     alignment: -5,
-  }  
+  }
 }
 
 function self.closing() {
@@ -304,10 +309,10 @@ function datLoad(file) {
     machineView.$(.header span).text = dat.Header.Name;
     view.settings.add("datfile", file);
 
-    if ($(#romsdir).value != "") 
+    if ($(#romsdir).value != "")
       gotoState(State.READY);
     else
-      gotoState(State.IDLE);      
+      gotoState(State.IDLE);
   });
 }
 
@@ -353,13 +358,13 @@ function self.ready() {
     if (romsdir.value) {
       view.settings.add("romsdir", romsdir.value);
 
-      if (MachineData.data != []) 
+      if (MachineData.data != [])
         gotoState(State.READY);
       else
         gotoState(State.IDLE);
     }
     else {
-      gotoState(State.IDLE);    
+      gotoState(State.IDLE);
     }
   };
 
@@ -370,7 +375,7 @@ function self.ready() {
   machineGrid.onRowClick = (rowNum) => {
     hide(machineView);
     unhide(romsView);
-    
+
     var row = MachineData.row(rowNum);
     romsView.$(span).text = row["Name"] + " - " + row["Description"];
 
@@ -441,6 +446,29 @@ function self.ready() {
     gotoState(State.STOP);
   }
 
+  defer(() => { view.setOptions(view.settings.get("options", DefaultOptions)); });
+
+  $(#options) << event click {
+    var params = {};
+    params = view.settings.get("options", DefaultOptions)
+
+    var v = view.dialog {
+       url: self.url("options.html"),
+       parameters: params,
+       alignment: -5
+    };
+
+    if (v) {
+      view.settings.add("options", v);
+      view.setOptions(v);
+    }
+  }
+
+  $(#quit) << event click {
+    info("Quitting...");
+    view.close();
+  }
+
   //
   // Restore settings
   //
@@ -455,7 +483,7 @@ function self.ready() {
 
   srcdirs.onValueChanged = () => {
     view.settings.add("srcdirs", srcdirs.values);
-  } 
+  }
 
   //
   // Log

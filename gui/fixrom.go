@@ -147,7 +147,7 @@ func copyProcess(renameList *[]Rename, opCount *int, opTotal *int, ch chan CopyR
     call("status", float32(*opCount) / float32(*opTotal), -1, 0)
 }
 
-func fixromStart(dir string, srcDirs []string, defaultDir bool) error {
+func fixromStart(dir string, srcDirs []string, options Options) error {
     fixMachStats = FixMachStats{}
     fixRomStats = FixRomStats{}
 
@@ -191,7 +191,7 @@ func fixromStart(dir string, srcDirs []string, defaultDir bool) error {
     for _, dir := range srcDirs {
         call("log", "Scanning " + dir)
 
-        rdb, err := romdb.OpenRomDB(dir, false) // TODO: add an option to skip headers?
+        rdb, err := romdb.OpenRomDB(dir, options.headers)
         if err != nil {
             return err
         }
@@ -262,8 +262,7 @@ func fixromStart(dir string, srcDirs []string, defaultDir bool) error {
 
         // Set the machine path if the machine is not valid
         if !valid {
-            // TODO: provide an option?
-            machine.Path = machine.Name + ".zip"
+            machine.Path = machine.Name + options.format
         }
 
         roms := []CopyRom{}
