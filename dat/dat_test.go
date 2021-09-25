@@ -20,6 +20,7 @@ import (
     "fmt"
     "os"
 
+    "gorom"
     "gorom/test"
     "gorom/romdb"
     "gorom/checksum"
@@ -102,7 +103,7 @@ func TestDatFileDir(t *testing.T) {
 
 func createMachine(machName string, testMach *test.Machine) *Machine {
     machine := &Machine{ machName, testMach.Description, testMach.Year,
-        testMach.Manufacturer, testMach.Category, nil, "", false }
+        testMach.Manufacturer, testMach.Category, nil, "", gorom.FormatZip }
 
     for romName, testRom := range testMach.Roms {
         crc32, ok := checksum.NewCrc32String(testRom.Crc32)
@@ -157,8 +158,11 @@ func validateChecksumTest(t *testing.T, df *test.DatFile) {
                 test.Fail(t, "ROM not OK")
             }
         }
-        if machine.Path != df.MachPath(machName) || machine.IsDir != df.IsDir() {
-            test.Fail(t, "machine attribute mismatch")
+        if machine.Path != df.MachPath(machName) {
+            test.Fail(t, fmt.Sprintf("machine path mismatch: %s != %s", machine.Path, df.MachPath(machName)))
+        }
+        if machine.Format != df.MachFormat(machName) {
+            test.Fail(t, fmt.Sprintf("machine format mismatch: %d != %d", machine.Format, df.MachFormat(machName)))
         }
         machIndex++
     }
@@ -211,8 +215,11 @@ func validateSizeTest(t *testing.T, df *test.DatFile) {
                 test.Fail(t, "ROM not OK")
             }
         }
-        if machine.Path != df.MachPath(machName) || machine.IsDir != df.IsDir() {
-            test.Fail(t, "machine attribute mismatch")
+        if machine.Path != df.MachPath(machName) {
+            test.Fail(t, fmt.Sprintf("machine path mismatch: %s != %s", machine.Path, df.MachPath(machName)))
+        }
+        if machine.Format != df.MachFormat(machName) {
+            test.Fail(t, fmt.Sprintf("machine format mismatch: %d != %d", machine.Format, df.MachFormat(machName)))
         }
         machIndex++
     }

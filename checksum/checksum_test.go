@@ -29,16 +29,13 @@ func runSha1FileTest(t *testing.T, df *test.DatFile) {
             test.Fail(t, err)
         }
 
-        if str, ok := df.MachineSha1[machName]; ok {
-            expSha1, ok := NewSha1String(str)
-            if !ok {
-                test.Fail(t, "invalid sha1")
-            }
-            if sha1 != expSha1 {
-                test.Fail(t, "sha1 checksum mismatch")
-            }
-        } else {
-            test.Fail(t, "machine not in sha1 map")
+        str := df.MachSha1(machName)
+        expSha1, ok := NewSha1String(str)
+        if !ok {
+            test.Fail(t, "invalid sha1")
+        }
+        if sha1 != expSha1 {
+            test.Fail(t, "sha1 checksum mismatch")
         }
     }
 }
@@ -56,16 +53,13 @@ func runCrc32FileTest(t *testing.T, df *test.DatFile) {
             test.Fail(t, err)
         }
 
-        if str, ok := df.MachineCrc32[machName]; ok {
-            expCrc32, ok := NewCrc32String(str)
-            if !ok {
-                test.Fail(t, "invalid crc32")
-            }
-            if crc32 != expCrc32 {
-                test.Fail(t, "crc32 checksum mismatch")
-            }
-        } else {
-            test.Fail(t, "machine not in crc32 map")
+        str := df.MachCrc32(machName)
+        expCrc32, ok := NewCrc32String(str)
+        if !ok {
+            test.Fail(t, "invalid crc32")
+        }
+        if crc32 != expCrc32 {
+            test.Fail(t, "crc32 checksum mismatch")
         }
     }
 }

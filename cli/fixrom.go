@@ -68,8 +68,8 @@ type CopyResults struct {
 func copyRoms(machPath string, roms []CopyRom, ch chan CopyResults) {
     results := CopyResults{ machPath: machPath }
 
-    machExt := romio.MachExt(machPath)
-    writer, err := romio.CreateRomWriterTemp(".", machExt)
+    format := romio.MachFormat(machPath)
+    writer, err := romio.CreateRomWriterTemp(".", format)
     if err != nil {
         results.errmsg = "create temp writer"
     } else {
@@ -217,7 +217,7 @@ func fixrom(datFile string, machines []string, dirs []string) (bool, error) {
 
         // Set the machine path if the machine is not valid
         if !valid {
-            machine.Path = machine.Name + options.FixRom.DefaultFmt
+            machine.Path = machine.Name + romio.MachExt(options.FixRom.Format)
         }
 
         term.Printf("%s : %s\n", machine.Path, term.Cyan("FIXING"))

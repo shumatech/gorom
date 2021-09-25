@@ -24,6 +24,7 @@ import (
     "runtime"
     "time"
 
+    "gorom"
     "gorom/util"
     "gorom/romio"
     "gorom/checksum"
@@ -376,7 +377,7 @@ func (rdb *RomDB) ChecksumDir(rr romio.RomReader, checksumFunc ChecksumFunc) err
 type ChecksumFunc func(name string, sum checksum.Sha1) error
 
 func (rdb *RomDB) Checksum(rr romio.RomReader, checksumFunc ChecksumFunc) error {
-    if romio.IsDirReader(rr) {
+    if rr.Format() == gorom.FormatDir {
         return rdb.ChecksumDir(rr, checksumFunc)
     } else {
         return rdb.ChecksumArchive(rr, checksumFunc)

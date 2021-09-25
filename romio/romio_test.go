@@ -16,33 +16,36 @@
 package romio
 
 import (
-    "testing"
-    "os"
-    "fmt"
+	"fmt"
+	"os"
+	"path"
+	"testing"
 
-    "gorom/test"
-    "gorom/checksum"
+	"gorom/checksum"
+	"gorom/test"
 )
 
-func romReaderTest(t *testing.T, machName string, machine *test.Machine, df *test.DatFile) {
-    if !IsRomReader(df.MachExt) {
+func romReaderTest(t *testing.T, machName string, machPath string, format int, machine *test.Machine) {
+    if !IsRomReader(format) {
         return
     }
     rr, err := OpenRomReaderByName(machName)
-    if rr == nil {
-        test.Fail(t, "machine not found: " + machName)
-    }
     if err != nil {
         test.Fail(t, err)
+    }
+    if rr == nil {
+        test.Fail(t, "machine not found: " + machName)
     }
     defer rr.Close()
 
     if rr.Name() != machName {
         test.Fail(t, fmt.Sprintf("wrong name: %s != %s", rr.Name(), machName))
     }
-    path := df.MachPath(machName)
-    if rr.Path() != path {
-        test.Fail(t, fmt.Sprintf("wrong path: %s != %s", rr.Path(), path))
+    if rr.Format() != format {
+        test.Fail(t, fmt.Sprintf("format mismatch: %d != %d", rr.Format(), format))
+    }
+    if rr.Path() != machPath {
+        test.Fail(t, fmt.Sprintf("wrong path: %s != %s", rr.Path(), machPath))
     }
     if len(rr.Files()) != len(machine.Roms) {
         test.Fail(t, fmt.Sprintf("wrong number of files: %d != %d", len(rr.Files()), len(machine.Roms)))
@@ -64,7 +67,7 @@ func romReaderTest(t *testing.T, machName string, machine *test.Machine, df *tes
 func runRomReaderTest(t *testing.T, df *test.DatFile) {
     defer test.Chdir(t, df.DataPath)()
     for machName, machine := range df.Machines {
-        romReaderTest(t, machName, &machine, df)
+        romReaderTest(t, machName, df.MachPath(machName), df.MachFormat(machName), &machine)
     }
 }
 
@@ -80,11 +83,11 @@ func TestRomReaderArchive(t *testing.T) {
     test.ForEachDat(t, test.ArchiveDats, runRomReaderTest)
 }
 
-func romWriterTest(t *testing.T, machName string, machine *test.Machine, df *test.DatFile) {
-    if !IsRomWriter(df.MachExt) {
+func romWriterTest(t *testing.T, machName string, format int, machine *test.Machine) {
+    if !IsRomWriter(format) {
         return
     }
-    rw, err := CreateRomWriterTemp(".", df.MachExt)
+    rw, err := CreateRomWriterTemp(".", format)
     if err != nil {
         test.Fail(t, err)
     }
@@ -93,11 +96,11 @@ func romWriterTest(t *testing.T, machName string, machine *test.Machine, df *tes
     defer rw.Close()
 
     rr, err := OpenRomReaderByName(machName)
-    if rr == nil {
-        test.Fail(t, "machine not found: " + machName)
-    }
     if err != nil {
         test.Fail(t, err)
+    }
+    if rr == nil {
+        test.Fail(t, "machine not found: " + machName)
     }
     defer rr.Close()
 
@@ -119,13 +122,13 @@ func romWriterTest(t *testing.T, machName string, machine *test.Machine, df *tes
 
     rw.Close()
 
-    romReaderTest(t, rw.Name(), machine, df)
+    romReaderTest(t, rw.Name(), path.Base(rw.Path()), format, machine)
 }
 
 func runRomWriterTest(t *testing.T, df *test.DatFile) {
     defer test.Chdir(t, df.DataPath)()
     for machName, machine := range df.Machines {
-        romWriterTest(t, machName, &machine, df)
+        romWriterTest(t, machName, df.MachFormat(machName), &machine)
     }
 }
 
@@ -151,7 +154,7 @@ func runChecksumMachTest(t *testing.T, df *test.DatFile) {
                                  actChecksums Checksums) error {
             rom, ok := machine.Roms[actName]
             if !ok {
-                test.Fail(t, "unexpected file")
+                test.Fail(t, fmt.Sprintf("unexpected file: %s", actName))
             }
             if rom.Size != actChecksums.Size {
                 test.Fail(t, fmt.Sprintf("size mismatch: %d != %d", rom.Size, actChecksums.Size))

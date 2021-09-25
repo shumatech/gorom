@@ -19,6 +19,7 @@ import (
     "testing"
     "os"
     "path"
+    "gorom"
     "gorom/test"
     "fmt"
 )
@@ -58,7 +59,7 @@ func runFixRom(t *testing.T, datFile string, machines []string, dirs []string) e
 func TestFixRomZipWithZip(t *testing.T) {
     test.RunDiffTest(t, "roms/badzip", "fixrom/badzip_zip.out", func() error {
         options = Options{}
-        options.FixRom.DefaultFmt = ".zip"
+        options.FixRom.Format = gorom.FormatZip
         return runFixRom(t, "../../dats/zip.dat", nil, []string{"../zip"})
     })
 }
@@ -66,7 +67,7 @@ func TestFixRomZipWithZip(t *testing.T) {
 func TestFixRomZipWithDir(t *testing.T) {
     test.RunDiffTest(t, "roms/badzip", "fixrom/badzip_dir.out", func() error {
         options = Options{}
-        options.FixRom.DefaultFmt = ".zip"
+        options.FixRom.Format = gorom.FormatZip
         return runFixRom(t, "../../dats/zip.dat", nil, []string{"../dir"})
     })
 }
@@ -74,7 +75,7 @@ func TestFixRomZipWithDir(t *testing.T) {
 func TestFixRomDirWithZip(t *testing.T) {
     test.RunDiffTest(t, "roms/baddir", "fixrom/baddir_zip.out", func() error {
         options = Options{}
-        options.FixRom.DefaultFmt = ""
+        options.FixRom.Format = gorom.FormatDir
         return runFixRom(t, "../../dats/dir.dat", nil, []string{"../zip"})
     })
 }
@@ -82,7 +83,7 @@ func TestFixRomDirWithZip(t *testing.T) {
 func TestFixRomDirWithDir(t *testing.T) {
     test.RunDiffTest(t, "roms/baddir", "fixrom/baddir_dir.out", func() error {
         options = Options{}
-        options.FixRom.DefaultFmt = ""
+        options.FixRom.Format = gorom.FormatDir
         return runFixRom(t, "../../dats/dir.dat", nil, []string{"../dir"})
     })
 }

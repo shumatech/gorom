@@ -17,6 +17,7 @@ package test
 
 import (
     "bytes"
+    "gorom"
     "gorom/term"
     "io"
     "io/ioutil"
@@ -61,6 +62,15 @@ type Machine struct {
 
 type MachineMap map[string]Machine
 
+type FileInfo struct {
+    Format int
+    Ext string
+    Sha1 string
+    Crc32 string
+}
+
+type InfoMap map[string]FileInfo
+
 type DatFile struct {
     Name string
     Description string
@@ -68,10 +78,8 @@ type DatFile struct {
     Author string
     Path string
     DataPath string
-    MachExt string
     Machines MachineMap
-    MachineSha1 map[string]string
-    MachineCrc32 map[string]string
+    Infos InfoMap
 }
 
 var (
@@ -102,43 +110,103 @@ var (
         },
     }
 
-    machineZipSha1 = map[string]string {
-        "machine1" : "99ad47f1d99dd9f754add7f05098353ea3d7554f",
-        "machine2" : "d92f1cb145d5241b9fc95107d627ffe9043dfc7d",
-        "machine3" : "44b12a1df5edbd1c80a484096b76ee6e4585a48a",
+    mixMap  = MachineMap {
+        "machine1" : {
+            "machine1", "", "", "",
+            RomMap {
+                "rom_1.bin" : { 4096, "c26a1549", "325701a893c1102805329f8af2d8410e40c14c79" },
+                "Rom_2.bin" : { 4096, "b7426747", "1d19fbe4b8e3b27a6244cff1375ca62629610923" },
+            },
+        },
+        "Machine2" : {
+            "machine2", "", "", "",
+            RomMap {
+                "Rom_3.bin" : { 4096, "04167f96", "2936ac223eec87c3df372560cd62f76b209d488a" },
+                "ROM_4.bin" : { 4096, "c506e1b8", "d7ed430be515f9b9400248a7cf6ef53006fd29b0" },
+                "rom_5.bin" : { 4096, "4b3d43d8", "ca383f60af75d30d9e33f9b9dd551b8c50f2c454" },
+            },
+        },
+        "MACHINE3" : {
+            "machine3", "", "", "",
+            RomMap {
+                "ROM_6.BIN" : { 4096, "321f42ee", "4544856e00b9efb13c1d5e6ee52ee29c80316d90" },
+                "Rom_7.BIN" : { 4096, "661dbe11", "4045f6b8da2684e64037dfc3a4589d519638d154" },
+                "ROM_8.bin" : { 4096, "a063b5c3", "eca357e2c830407b89741f098f507f5d41513f43" },
+                "rom_9.BIN" : { 4096, "ad119cd7", "9ca412192ff0714760cb9c1f21e73f1f4a693d28" },
+            },
+        },
     }
 
-    machineZipCrc32 = map[string]string {
-        "machine1" : "547b2b55",
-        "machine2" : "d1799f96",
-        "machine3" : "00889ad4",
+    infoZip = InfoMap {
+        "machine1" : { gorom.FormatZip, ".zip", "99ad47f1d99dd9f754add7f05098353ea3d7554f", "547b2b55" },
+        "machine2" : { gorom.FormatZip, ".zip", "d92f1cb145d5241b9fc95107d627ffe9043dfc7d", "d1799f96" },
+        "machine3" : { gorom.FormatZip, ".zip", "44b12a1df5edbd1c80a484096b76ee6e4585a48a", "00889ad4" },
+    }
+
+    infoDir = InfoMap {
+        "machine1" : { gorom.FormatDir, "", "", "" },
+        "machine2" : { gorom.FormatDir, "", "", "" },
+        "machine3" : { gorom.FormatDir, "", "", "" },
+    }
+
+    info7z = InfoMap {
+        "machine1" : { gorom.Format7z, ".7z", "", "" },
+        "machine2" : { gorom.Format7z, ".7z", "", "" },
+        "machine3" : { gorom.Format7z, ".7z", "", "" },
+    }
+
+    infoRar = InfoMap {
+        "machine1" : { gorom.FormatRar, ".rar", "", "" },
+        "machine2" : { gorom.FormatRar, ".rar", "", "" },
+        "machine3" : { gorom.FormatRar, ".rar", "", "" },
+    }
+
+    infoTgz = InfoMap {
+        "machine1" : { gorom.FormatTgz, ".tgz", "", "" },
+        "machine2" : { gorom.FormatTgz, ".tgz", "", "" },
+        "machine3" : { gorom.FormatTgz, ".tgz", "", "" },
+    }
+
+    infoMix = InfoMap {
+        "machine1" : { gorom.FormatZip, ".zip", "", "" },
+        "Machine2" : { gorom.Format7z,  ".7z",  "", "" },
+        "MACHINE3" : { gorom.FormatRar, ".RAR", "", "" },
     }
 
     ZipDats = []DatFile {
-        { "ziproms", "Zip_ROMs", "", "", "dats/zip.dat", "roms/zip", ".zip", machineMap, machineZipSha1, machineZipCrc32},
+        { "ziproms", "Zip_ROMs", "", "", "dats/zip.dat", "roms/zip", machineMap, infoZip },
     }
 
     DirDats = []DatFile {
-        { "dirroms", "Dir_ROMs", "", "", "dats/dir.dat", "roms/dir", "", machineMap, nil, nil },
+        { "dirroms", "Dir_ROMs", "", "", "dats/dir.dat", "roms/dir", machineMap, infoDir },
     }
 
     HeaderDats = []DatFile {
-        { "ziproms", "Zip_ROMs", "", "", "dats/zip.dat", "roms/header", ".zip", machineMap, nil, nil },
+        { "ziproms", "Zip_ROMs", "", "", "dats/zip.dat", "roms/header", machineMap, infoZip },
     }
 
     ArchiveDats = []DatFile {
-        { "7zroms",  "7z_ROMs",  "", "", "dats/7z.dat",  "roms/7z",  ".7z",  machineMap, nil, nil},
-        { "rarroms", "Rar_ROMs", "", "", "dats/rar.dat", "roms/rar", ".rar", machineMap, nil, nil},
-        { "tgzroms", "Tgz_ROMs", "", "", "dats/tgz.dat", "roms/tgz", ".tgz", machineMap, nil, nil},
+        { "7zroms",  "7z_ROMs",  "", "", "dats/7z.dat",  "roms/7z",  machineMap, info7z  },
+        { "rarroms", "Rar_ROMs", "", "", "dats/rar.dat", "roms/rar", machineMap, infoRar },
+        { "tgzroms", "Tgz_ROMs", "", "", "dats/tgz.dat", "roms/tgz", machineMap, infoTgz },
+        { "mixroms", "Mix_ROMs", "", "", "dats/mix.dat", "roms/mix", mixMap,     infoMix },
     }
 )
 
-func (df *DatFile)MachPath(machName string) string {
-    return machName + df.MachExt
+func (df *DatFile)MachFormat(machName string) int {
+    return df.Infos[machName].Format
 }
 
-func (df *DatFile)IsDir() bool {
-    return df.MachExt == ""
+func (df *DatFile)MachPath(machName string) string {
+    return machName + df.Infos[machName].Ext
+}
+
+func (df *DatFile)MachSha1(machName string) string {
+    return df.Infos[machName].Sha1
+}
+
+func (df *DatFile)MachCrc32(machName string) string {
+    return df.Infos[machName].Crc32
 }
 
 func ForEachDat(t *testing.T, dats []DatFile, callback func(t *testing.T, dat *DatFile)) {

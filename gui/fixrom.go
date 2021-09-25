@@ -79,8 +79,8 @@ func copyRoms(machPath string, roms []CopyRom, ch chan CopyResults) {
         return
     }
 
-    machExt := romio.MachExt(machPath)
-    writer, err := romio.CreateRomWriterTemp(".", machExt)
+    format := romio.MachFormat(machPath)
+    writer, err := romio.CreateRomWriterTemp(".", format)
     if err != nil {
         results.errmsg = "create temp writer"
     } else {

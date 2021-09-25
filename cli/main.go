@@ -17,11 +17,11 @@ package main
 
 import (
 	"fmt"
+	"gorom"
 	"log"
 	"os"
 	"path/filepath"
 
-	"gorom/romio"
 	"gorom/term"
 	"gorom/util"
 
@@ -72,6 +72,7 @@ type Options struct {
     FixRom struct {
         Sources     []string  `short:"s" long:"src" description:"ROM source directory"`
         DefaultFmt  string    `short:"D" long:"default-fmt" description:"Default machine format: dir,zip,7z,or tgz"`
+        Format      int
         SkipScan    bool      `short:"S" long:"skip-scan" description:"Skip ROM source directory scan"`
         ExtraTrash  bool      `short:"E" long:"extra-trash" description:"Move extra files to the trash"`
     } `group:"Fix ROM (-f, --fixrom) Options"`
@@ -337,12 +338,18 @@ func main() {
     if options.Operations.FixRom != "" {
         datFile := filepath.ToSlash(options.Operations.FixRom)
 
-        options.FixRom.DefaultFmt = "." + options.FixRom.DefaultFmt
-        if options.FixRom.DefaultFmt == "." {
-            options.FixRom.DefaultFmt = ".zip"
-        } else if options.FixRom.DefaultFmt == ".dir" {
-            options.FixRom.DefaultFmt = ""
-        } else if !romio.IsArchiveWriter(options.FixRom.DefaultFmt) {
+        switch options.FixRom.DefaultFmt {
+        case "dir":
+            options.FixRom.Format = gorom.FormatDir
+        case "zip":
+            options.FixRom.Format = gorom.FormatZip
+        case "7z":
+            options.FixRom.Format = gorom.Format7z
+        case "tgz":
+            options.FixRom.Format = gorom.FormatTgz
+        case "":
+            options.FixRom.Format = gorom.FormatZip
+        default:
             usage("Invalid machine format")
         }
 

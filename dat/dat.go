@@ -49,7 +49,7 @@ type Machine struct {
     Category        string         `xml:"category"`
     Roms            []*Rom         `xml:"rom"`
     Path            string
-    IsDir           bool
+    Format          int
 }
 
 type Rom struct {
@@ -147,7 +147,7 @@ func ValidateChecksums(machine *Machine, rdb *romdb.RomDB, badNames map[string]s
     }
     defer rr.Close()
 
-    machine.IsDir = romio.IsDirReader(rr)
+    machine.Format = rr.Format()
     machine.Path = rr.Path()
 
     err = rdb.Checksum(rr, func(name string, checksum checksum.Sha1) error {
@@ -225,7 +225,7 @@ func ValidateSizes(machine *Machine, extras *[]string, sizeFunc SizeFunc) (bool,
     }
     defer rr.Close()
 
-    machine.IsDir = romio.IsDirReader(rr)
+    machine.Format = rr.Format()
     machine.Path = rr.Path()
 
     for _, file := range rr.Files() {

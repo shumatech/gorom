@@ -29,6 +29,7 @@ import (
 
 	"github.com/klauspost/compress/zip"
 
+    "gorom"
 	"gorom/archive"
 	"gorom/checksum"
 	"gorom/torzip"
@@ -39,12 +40,49 @@ import (
 // Utility Functions
 ///////////////////////////////////////////////////////////////////////////////
 
-func MachExt(machPath string) string {
-    return strings.ToLower(path.Ext(machPath))
+func MachExt(format int) string{
+    var ext string
+    switch format {
+    case gorom.FormatDir:
+        ext = ""
+    case gorom.FormatZip:
+        ext = ".zip"
+    case gorom.Format7z:
+        ext = ".7z"
+    case gorom.FormatRar:
+        ext = ".rar"
+    case gorom.FormatTgz:
+        ext = ".tgz"
+    default:
+        panic("invalid format")
+    }
+    return ext
+}
+
+func MachFormat(machPath string) int {
+    var format int
+    machExt := strings.ToLower(path.Ext(machPath))
+    switch machExt {
+    case "":
+        format = gorom.FormatDir;
+    case ".zip":
+        format = gorom.FormatZip;
+    case ".7z":
+        format = gorom.Format7z;
+    case ".rar":
+        format = gorom.FormatRar;
+    case ".tgz":
+        format = gorom.FormatTgz;
+    case ".gz":
+        format = gorom.FormatTgz;
+    default:
+        format = gorom.FormatInvalid;
+    }
+    return format;
 }
 
 func MachName(machPath string) string {
-    return strings.ToLower(strings.TrimSuffix(path.Base(machPath), path.Ext(machPath)))
+    return strings.TrimSuffix(path.Base(machPath), path.Ext(machPath))
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -70,11 +108,11 @@ type RomReader interface {
     Stat(name string) *RomFile
     Open(file *RomFile) (io.ReadCloser, error)
     Close() error
+    Format() int
 }
 
-func IsRomReader(machPath string) bool {
-    machExt := MachExt(machPath)
-    return machExt == "" || machExt == ".zip" || IsArchiveReader(machExt)
+func IsRomReader(format int) bool {
+    return format != gorom.FormatInvalid
 }
 
 func OpenRomReader(machPath string) (RomReader, error) {
@@ -86,8 +124,8 @@ func OpenRomReader(machPath string) (RomReader, error) {
     if info.IsDir() {
         return OpenDirReader(machPath)
     } else if info.Mode().IsRegular() {
-        machExt := MachExt(machPath)
-        if machExt == ".zip" {
+        machFmt := MachFormat(machPath)
+        if machFmt == gorom.FormatZip {
             return OpenZipReader(machPath)
         } else {
             return OpenArchiveReader(machPath)
@@ -97,19 +135,37 @@ func OpenRomReader(machPath string) (RomReader, error) {
     return nil, nil
 }
 
+// TODO: do we need really to modify machName???
 func OpenRomReaderByName(machName string) (RomReader, error) {
     info, err := os.Stat(machName)
     if err == nil && info.IsDir() {
         return OpenDirReader(machName)
     } else {
-        fileName := machName + ".zip"
+        ext := MachExt(gorom.FormatZip)
+        fileName := machName + ext
         info, err = os.Stat(fileName)
         if err == nil && info.Mode().IsRegular() {
             machName = fileName
             return OpenZipReader(machName)
         }
-        for _, ext := range ArchiveReaderExts() {
+
+        fileName = machName + strings.ToUpper(ext)
+        info, err = os.Stat(fileName)
+        if err == nil && info.Mode().IsRegular() {
+            machName = fileName
+            return OpenZipReader(machName)
+        }
+
+        for _, format := range ArchiveReaderFormats() {
+            ext = MachExt(format)
             fileName = machName + ext
+            info, err = os.Stat(fileName)
+            if err == nil && info.Mode().IsRegular() {
+                machName = fileName
+                return OpenArchiveReader(machName)
+            }
+
+            fileName = machName + strings.ToUpper(ext)
             info, err = os.Stat(fileName)
             if err == nil && info.Mode().IsRegular() {
                 machName = fileName
@@ -131,11 +187,6 @@ func (ri *RomInfo) Stat(name string) *RomFile {
     return nil
 }
 
-func IsDirReader(rr RomReader) bool {
-    _, ok := rr.(*DirReader)
-    return ok
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // ROM Writer
 ///////////////////////////////////////////////////////////////////////////////
@@ -150,18 +201,17 @@ type RomWriter interface {
     Close() error
 }
 
-func IsRomWriter(machPath string) bool {
-    machExt := MachExt(machPath)
-    return machExt == "" || machExt == ".zip" || IsArchiveWriter(machExt)
+func IsRomWriter(format int) bool {
+    return format != gorom.FormatInvalid && format != gorom.FormatRar
 }
 
 func CreateRomWriter(machPath string) (RomWriter, error) {
     var err error
     var rw RomWriter
-    machExt := strings.ToLower(MachExt(machPath))
-    if machExt == "" {
+    machFmt := MachFormat(machPath)
+    if machFmt == gorom.FormatDir {
         rw, err =  CreateDirWriter(machPath)
-    } else if machExt == ".zip" {
+    } else if machFmt == gorom.FormatZip {
         rw, err = CreateZipWriter(machPath)
     } else {
         rw, err =  CreateArchiveWriter(machPath)
@@ -169,44 +219,26 @@ func CreateRomWriter(machPath string) (RomWriter, error) {
     return rw, err
 }
 
-func CreateRomWriterTemp(dir string, machExt string) (RomWriter, error) {
+func CreateRomWriterTemp(dir string, format int) (RomWriter, error) {
     var err error
     var tmpName string
-    if machExt == "" {
+    if format == gorom.FormatDir {
         tmpName, err = ioutil.TempDir(dir, "gorom*")
         if err != nil {
             return nil, err
         }
         return CreateDirWriter(tmpName)
     } else {
-        fh, err := ioutil.TempFile(dir, "gorom*" + machExt)
+        fh, err := ioutil.TempFile(dir, "gorom*" + MachExt(format))
         if err != nil {
             return nil, err
         }
         defer fh.Close()
-        if machExt == ".zip" {
+        if format == gorom.FormatZip {
             return CreateZipWriter(fh.Name())
         } else {
             return CreateArchiveWriter(fh.Name())
         }
-    }
-}
-
-func CreateRomWriterTemp2(dir string, isDir bool) (RomWriter, error) {
-    var err error
-    var tmpName string
-    if isDir {
-        tmpName, err = ioutil.TempDir(dir, "gorom*")
-        if err != nil {
-            return nil, err
-        }
-        return CreateDirWriter(tmpName)
-    } else {
-        fh, err := ioutil.TempFile(dir, "gorom*.zip")
-        if err != nil {
-            return nil, err
-        }
-        return NewZipWriter(fh)
     }
 }
 
@@ -216,12 +248,6 @@ func CreateRomWriterTemp2(dir string, isDir bool) (RomWriter, error) {
 
 type DirReader struct {
     RomInfo
-}
-
-func OpenDirReader(machPath string) (*DirReader, error) {
-    var dr DirReader
-    err := dr.init(machPath)
-    return &dr, err
 }
 
 func scanDir(base string, dir string, files *[]*RomFile) error {
@@ -244,19 +270,20 @@ func scanDir(base string, dir string, files *[]*RomFile) error {
     })
 }
 
-func (dr *DirReader) init(machPath string) error {
+func OpenDirReader(machPath string) (*DirReader, error) {
     files := []*RomFile{}
 
     err := scanDir(machPath, "", &files)
     if err != nil {
-        return err
+        return nil, err
     }
 
+    var dr DirReader
     dr.path = machPath
     dr.name = MachName(machPath)
     dr.files = files
 
-    return nil
+    return &dr, nil
 }
 
 func (dr *DirReader) Name() string {
@@ -287,6 +314,10 @@ func (dr *DirReader) Close() error {
     return nil
 }
 
+func (dr *DirReader) Format() int {
+    return gorom.FormatDir
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Directory Writer
 ///////////////////////////////////////////////////////////////////////////////
@@ -299,21 +330,16 @@ type DirWriter struct {
 }
 
 func CreateDirWriter(machPath string) (*DirWriter, error) {
-    var dw DirWriter
-    err := dw.init(machPath)
-    return &dw, err
-}
-
-func (dw *DirWriter) init(machPath string) error {
     err := os.MkdirAll(machPath, os.ModePerm)
     if err != nil && os.IsNotExist(err) {
-        return err
+        return nil, err
     }
 
+    var dw DirWriter
     dw.path = machPath
     dw.name = MachName(machPath)
 
-    return nil
+    return &dw, nil
 }
 
 func (dw *DirWriter) Name() string {
@@ -392,19 +418,14 @@ type ZipReader struct {
 }
 
 func OpenZipReader(machPath string) (*ZipReader, error) {
-    var zr ZipReader
-    err := zr.init(machPath)
-    return &zr, err
-}
-
-func (zr *ZipReader) init(machPath string) error {
     info, err := os.Stat(machPath)
     if err != nil {
-        return err
+        return nil, err
     }
+
     rc, err := zip.OpenReader(machPath)
     if err != nil {
-        return err
+        return nil, err
     }
 
     files := []*RomFile{}
@@ -419,13 +440,14 @@ func (zr *ZipReader) init(machPath string) error {
         files = append(files, &file)
     }
 
+    var zr ZipReader
     zr.path = machPath
     zr.name = MachName(machPath)
     zr.files = files
     zr.dir = dir
     zr.rc = rc
 
-    return nil
+    return &zr, nil
 }
 
 func (zr *ZipReader) Name() string {
@@ -472,6 +494,10 @@ func (zr *ZipReader) OpenRaw(file *RomFile) (io.ReadCloser, *zip.FileHeader, err
         return nil, nil, err
     }
     return nopReadCloser{ rc }, &fh.FileHeader, nil
+}
+
+func (zr *ZipReader) Format() int {
+    return gorom.FormatZip
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -562,35 +588,29 @@ type ArchiveReader struct {
     dir map[string]int
     rc *archive.Reader
     index int
+    format int
 }
 
-func ArchiveReaderExts() []string {
-    return []string{".7z", ".rar", ".tgz", ".gz"}
-}
-
-func IsArchiveReader(machPath string) bool {
-    machExt := MachExt(machPath)
-    for _, ext := range ArchiveReaderExts() {
-        if ext == machExt {
-            return true
-        }
-    }
-    return false
+func ArchiveReaderFormats() []int {
+    return []int{gorom.Format7z, gorom.FormatRar, gorom.FormatTgz}
 }
 
 func OpenArchiveReader(machPath string) (*ArchiveReader, error) {
-    if !IsArchiveReader(machPath) {
+    format := MachFormat(machPath)
+    valid := false
+    for _, support := range ArchiveReaderFormats() {
+        if format == support {
+            valid = true
+            break
+        }
+    }
+    if !valid {
         return nil, fmt.Errorf("invalid archive format")
     }
-    var ar ArchiveReader
-    err := ar.init(machPath)
-    return &ar, err
-}
 
-func (ar *ArchiveReader) init(machPath string) error {
     rc, err := archive.OpenReader(machPath)
     if err != nil {
-        return err
+        return nil, err
     }
 
     files := []*RomFile{}
@@ -610,17 +630,19 @@ func (ar *ArchiveReader) init(machPath string) error {
     }
     if err = rc.Error(); err != nil {
         rc.Close()
-        return err
+        return nil, err
     }
 
+    var ar ArchiveReader
     ar.path = machPath
     ar.name = MachName(machPath)
     ar.files = files
     ar.dir = dir
     ar.rc = rc
     ar.index = index
+    ar.format = format
 
-    return nil
+    return &ar, nil
 }
 
 func (ar *ArchiveReader) Name() string {
@@ -666,6 +688,10 @@ func (ar *ArchiveReader) Close() error {
     return nil
 }
 
+func (ar *ArchiveReader) Format() int {
+    return ar.format;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Archive Writer
 ///////////////////////////////////////////////////////////////////////////////
@@ -685,40 +711,34 @@ type ArchiveWriter struct {
     next int
 }
 
-func ArchiveWriterExts() []string {
-    return []string{".7z", ".tgz", ".gz"}
-}
-
-func IsArchiveWriter(machPath string) bool {
-    machExt := MachExt(machPath)
-    for _, ext := range ArchiveWriterExts() {
-        if ext == machExt {
-            return true
-        }
-    }
-    return false
+func ArchiveWriterFormats() []int {
+    return []int{gorom.Format7z, gorom.FormatTgz}
 }
 
 func CreateArchiveWriter(machPath string) (*ArchiveWriter, error) {
-    if !IsArchiveWriter(machPath) {
+    valid := false
+    format := MachFormat(machPath)
+    for _, support := range ArchiveWriterFormats() {
+        if format == support {
+            valid = true
+            break
+        }
+    }
+    if !valid {
         return nil, fmt.Errorf("invalid archive format")
     }
-    var aw ArchiveWriter
-    err := aw.init(machPath)
-    return &aw, err
-}
 
-func (aw *ArchiveWriter) init(machPath string) error {
     wc, err := archive.CreateWriter(machPath)
     if err != nil {
-        return err
+        return nil, err
     }
 
+    var aw ArchiveWriter
     aw.path = machPath
     aw.name = MachName(machPath)
     aw.wc = wc
 
-    return nil
+    return &aw, nil
 }
 
 func (aw *ArchiveWriter) Name() string {
